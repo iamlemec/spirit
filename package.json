@@ -1,0 +1,36 @@
+{
+  "name": "spirit",
+  "version": "0.1.0",
+  "description": "Elltwo markdown parser.",
+  "type": "module",
+  "author": "Doug Hanley and Evan Piermont",
+  "license": "MIT",
+  "scripts": {
+    "build": "npx gulp build",
+    "devel": "npx gulp devel"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.2.4",
+    "@codemirror/lang-markdown": "^6.1.1",
+    "@codemirror/language": "^6.6.0",
+    "@codemirror/state": "^6.2.0",
+    "@codemirror/view": "^6.11.2",
+    "codemirror": "^6.0.1",
+    "es6-promisify": "^7.0.0",
+    "express": "^4.18.2",
+    "gulp-connect": "^5.7.0",
+    "gum.js": "github:iamlemec/gum.js",
+    "http": "^0.0.1-security",
+    "katex": "^0.16.7",
+    "socket.io": "^4.6.1",
+    "socket.io-client": "^4.6.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.2",
+    "gulp": "^4.0.2",
+    "gulp-cli": "^2.3.0",
+    "gulp-rename": "^2.0.0",
+    "rollup": "^3.21.8"
+  }
+}
