@@ -71,24 +71,11 @@ gulp.task('fonts', gulp.parallel('gum-fonts', 'katex-fonts'));
 // spirit all
 gulp.task('build', gulp.parallel('js', 'css', 'fonts'));
 
-// spirit reload
-gulp.task('reload', () => gulp.src(['index.html'])
-    .pipe(connect.reload())
-);
-
 // spirit serve
-gulp.task('serve', () => {
-    connect.server({
-        root: '.',
-        port: 8000,
-        host: 'localhost',
-        livereload: true
-    });
-
-    gulp.watch(['index.html'], gulp.series('reload'));
-    gulp.watch(['src/js/markum.js', 'src/js/spirit.js'], gulp.series('js'));
+gulp.task('watch', () => {
+    gulp.watch(['src/js/markum.js', 'src/js/spirit.js', 'src/js/index.js'], gulp.series('js'));
     gulp.watch(['src/css/markum.css', 'src/css/spirit.css'], gulp.series('css'));
 });
 
 // spirit devel mode
-gulp.task('devel', gulp.series(['build', 'serve']));
+gulp.task('devel', gulp.series(['build', 'watch']));

@@ -1,5 +1,5 @@
 import { EditorView, keymap, lineNumbers } from '@codemirror/view'
-import { EditorState } from '@codemirror/state'
+import { EditorState, Compartment } from '@codemirror/state'
 import { defaultKeymap, indentWithTab, historyKeymap } from '@codemirror/commands'
 import { bracketMatching } from '@codemirror/language'
 import { javascript } from '@codemirror/lang-javascript'
@@ -7,7 +7,9 @@ import { markdown } from '@codemirror/lang-markdown'
 import { minimalSetup } from 'codemirror'
 import { parseDocument } from './markum.js'
 
-export { ElltwoEditor, enableResize }
+export { SpiritEditor, enableResize }
+
+const readOnly = new Compartment();
 
 function readWriteEditor(parent, update) {
     return new EditorView({
@@ -25,6 +27,7 @@ function readWriteEditor(parent, update) {
                 ]),
                 EditorView.lineWrapping,
                 EditorView.updateListener.of(update),
+                readOnly.of(EditorState.readOnly.of(true))
             ],
         }),
         parent: parent,
@@ -43,41 +46,50 @@ function setText(editor, text) {
     editor.dispatch(upd);
 }
 
-class ElltwoEditor {
-    constructor(code, disp, cookie) {
+class SpiritEditor extends EventTarget {
+    constructor(code, disp) {
+        super();
         this.code = code;
         this.disp = disp;
-        this.cookie = cookie;
+        this.init = false;
 
         // init editor
-        this.edit_text = readWriteEditor(code, upd => {
-            if (upd.docChanged) {
-                console.log(upd.changes);
-                let text = getText(upd.state);
-                this.setCookie(text);
-                this.updateView(text);
+        this.edit = readWriteEditor(code, upd => {
+            if (this.init && upd.docChanged) {
+                this.applyUpdate(upd);
             }
         });
     }
 
-    setCookie(src) {
-        if (this.cookie != null) {
-            this.cookie(src);
-        }
+    initialize(src) {
+        this.setCode(src);
+        this.setDisp(src);
+        this.init = true;
+        this.setReadOnly(false);
+    }
+
+    applyUpdate(upd) {
+        let text = getText(upd.state);
+        this.setDisp(text);
+        this.dispatchEvent(
+            new CustomEvent('update', {detail: upd.changes})
+        );
+    }
+
+    setReadOnly(flag) {
+        this.edit.dispatch({
+            effects: readOnly.reconfigure(EditorState.readOnly.of(flag))
+        });
     }
 
     setCode(src) {
-        setText(this.edit_text, src);
+        setText(this.edit, src);
     }
 
-    setDisplay(html) {
-        this.disp.innerHTML = html;
-    }
-
-    updateView(src) {
+    setDisp(src) {
         let tree = parseDocument(src);
         let html = tree.html();
-        this.setDisplay(html);
+        this.disp.innerHTML = html;
     }
 }
 
