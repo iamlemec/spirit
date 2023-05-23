@@ -61,7 +61,7 @@ class SpiritEditor extends EventTarget {
         });
     }
 
-    initialize(src) {
+    loadDocument(src) {
         this.setCode(src);
         this.setDisp(src);
         this.init = true;

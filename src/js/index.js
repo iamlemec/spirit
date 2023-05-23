@@ -14,30 +14,39 @@ class Connection extends EventTarget {
         // track connectivity
         this.ws.addEventListener('open', evt => {
             console.log('connected');
+            this.dispatchEvent(new Event('open'));
         });
 
         // connect real events
         this.ws.addEventListener('message', evt => {
             console.log(`received: ${evt.data}`);
-            let {cmd, data} = JSON.parse(evt.data);
-            if (cmd == 'init') {
+            let {cmd, doc, data} = JSON.parse(evt.data);
+            if (cmd == 'load') {
                 this.dispatchEvent(
-                    new CustomEvent('init', {detail: data})
+                    new CustomEvent('load', {detail: data})
                 );
             }
         });
     }
 
-    update(chg) {
+    loadDocument(doc) {
+        this.ws.send(JSON.stringify({
+            cmd: 'load', doc
+        }));
+    }
+
+    sendUpdates(doc, chg) {
         if (this.ws.readyState) {
             this.ws.send(JSON.stringify({
-                cmd: 'update', data: chg.toJSON()
+                cmd: 'update', doc, data: chg.toJSON()
             }));
         }
     }
 }
 
-function initSpirit() {
+function initSpirit(doc) {
+    let url = 'ws://localhost:8000';
+
     // global elements
     let left = document.querySelector('#left');
     let right = document.querySelector('#right');
@@ -48,15 +57,20 @@ function initSpirit() {
 
     // make the actual editor
     let editor = new SpiritEditor(left, right);
-    let connect = new Connection('ws://localhost:8000');
+    let connect = new Connection(url);
 
     // connect editor events
     editor.addEventListener('update', evt => {
-        connect.update(evt.detail);
+        connect.sendUpdates(doc, evt.detail);
     });
 
     // connect server events
-    connect.addEventListener('init', evt => {
-        editor.initialize(evt.detail);
+    connect.addEventListener('load', evt => {
+        editor.loadDocument(evt.detail);
+    });
+
+    // open the first document
+    connect.addEventListener('open', evt => {
+        connect.loadDocument(doc);
     });
 }
