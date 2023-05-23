@@ -70,7 +70,11 @@ function initSpirit(doc) {
     });
 
     // open the first document
-    connect.addEventListener('open', evt => {
-        connect.loadDocument(doc);
-    });
+    if (doc) {
+        connect.addEventListener('open', evt => {
+            connect.loadDocument(doc);
+        });
+    } else {
+        editor.loadDocument();
+    }
 }

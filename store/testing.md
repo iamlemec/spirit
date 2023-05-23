@@ -11,4 +11,8 @@ let sqr = x => Rotate(Square(), r2d*x, {invar: true});
 let boxes = SymPoints({fy: sin, fs: sqr, size: 0.4, xlim: [0, 2*pi], N: 150});
 return Graph(boxes, {ylim: [-1.6, 1.6]});
 
-Now we can reference this figure too @[gum].
+Now we can reference this figure too @[gum]. Hello world!
+
+$$ [eq1] x^3
+
+Now reference the general @[eq1]. Here we go! $x^4$.

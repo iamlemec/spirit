@@ -27,7 +27,7 @@
 <script type="module">
 import { initSpirit } from './js/index.js'
 let params = new URLSearchParams(window.location.search);
-let source = params.get('doc') ?? 'testing.md';
+let source = params.has('source') ? params.get('source') : null;
 initSpirit(source);
 </script>
 
