@@ -47,54 +47,83 @@ function loadFile(fpath) {
     return text;
 }
 
-// connect websocket
-wss.on('connection', ws => {
-    console.log(`connected`);
+class ClientHandler extends EventTarget {
+    constructor(ws) {
+        super();
+        this.ws = ws;
 
-    // load default document
-    let fpath = null;
-    let state = Text.of(['']);
-    let stale = false;
+        // initialize state
+        this.fpath = null;
+        this.state = Text.of(['']);
+        this.taint = false;
 
-    // handle incoming messages
-    ws.on('message', msg => {
-        console.log(`received: ${msg}`);
-        let {cmd, doc, data} = JSON.parse(msg);
-        if (cmd == 'load') {
-            if ((fpath = getLocalPath(doc)) == null) {
-                console.log(`non-local path: ${doc}`);
-                return;
+        // handle incoming messages
+        ws.on('message', msg => {
+            console.log(`received: ${msg}`);
+            let {cmd, doc, data} = JSON.parse(msg);
+            if (cmd == 'load') {
+                if ((this.fpath = getLocalPath(doc)) == null) {
+                    console.log(`non-local path: ${doc}`);
+                } else {
+                    this.load(doc);
+                }
+            } else if (cmd == 'update') {
+                let chg = ChangeSet.fromJSON(data);
+                this.update(chg);
             }
-            let text = loadFile(fpath);
-            state = Text.of(text.split('\n'));
-            ws.send(JSON.stringify({
-                cmd: 'load', data: text
-            }));
-        } else if (cmd == 'update') {
-            let chg = ChangeSet.fromJSON(data);
-            state = chg.apply(state);
-            stale = true;
-        }
-    });
+        });
 
-    // flush update cache
-    function saveDocument() {
-        if (stale) {
-            stale = false;
-            if (fpath != null) {
-                let text = state.toString();
-                console.log(`writing ${fpath} [${text.length} bytes]`);
-                fs.writeFileSync(fpath, text, 'utf8');
+        // handle closure
+        ws.on('close', () => {
+            console.log(`disconnected`);
+            clearInterval(this.timer);
+            this.save();
+            this.dispatchEvent(
+                new Event('close')
+            );
+        });
+
+        // set up autosave
+        this.timer = setInterval(() => {
+            this.save();
+        }, rate);
+    }
+
+    load(doc) {
+        let text = loadFile(this.fpath);
+        this.state = Text.of(text.split('\n'));
+        this.ws.send(JSON.stringify({
+            cmd: 'load', data: text
+        }));
+    }
+
+    update(chg) {
+        this.state = chg.apply(this.state);
+        this.stale = true;
+    }
+
+    save() {
+        if (this.stale) {
+            this.stale = false;
+            if (this.fpath != null) {
+                let text = this.state.toString();
+                console.log(`writing ${this.fpath} [${text.length} bytes]`);
+                fs.writeFileSync(this.fpath, text, 'utf8');
             }
         }
     }
+}
 
-    // save document intermittently
-    let inter = setInterval(saveDocument, rate);
-    ws.on('close', () => {
-        console.log(`disconnected`);
-        clearInterval(inter);
-        saveDocument();
+// set up client map
+let clients = new Map();
+
+// connect websocket
+wss.on('connection', ws => {
+    console.log(`connected`);
+    let handler = new ClientHandler(ws);
+    clients.set(ws, handler);
+    handler.addEventListener('close', () => {
+        clients.delete(ws);
     });
 });
 
