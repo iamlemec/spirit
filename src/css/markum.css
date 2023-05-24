@@ -115,17 +115,24 @@ table th, table td {
     padding: 5px 5px 0px 5px;
 }
 
+/* code */
+
+.code {
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+
 /* references */
 
-a.reference {
+a.reference, a.internal {
     text-decoration: none;
 }
 
-a.reference, a.reference:visited {
+a.reference, a.reference:visited, a.internal, a.internal:visited {
     color: var(--neon-blue);
 }
 
-a.reference.fail {
+a.reference.fail, a.internal.fail {
     color: var(--neon-red);
 }
 

@@ -56,18 +56,6 @@ wss.on('connection', ws => {
     let state = Text.of(['']);
     let stale = false;
 
-    // flush update cache
-    function saveDocument() {
-        if (stale) {
-            stale = false;
-            if (fpath != null) {
-                let text = state.toString();
-                console.log(`writing ${fpath} [${text.length} bytes]`);
-                fs.writeFileSync(fpath, text, 'utf8');
-            }
-        }
-    }
-
     // handle incoming messages
     ws.on('message', msg => {
         console.log(`received: ${msg}`);
@@ -89,14 +77,25 @@ wss.on('connection', ws => {
         }
     });
 
-    // handle disconnect
+    // flush update cache
+    function saveDocument() {
+        if (stale) {
+            stale = false;
+            if (fpath != null) {
+                let text = state.toString();
+                console.log(`writing ${fpath} [${text.length} bytes]`);
+                fs.writeFileSync(fpath, text, 'utf8');
+            }
+        }
+    }
+
+    // save document intermittently
+    let inter = setInterval(saveDocument, rate);
     ws.on('close', () => {
         console.log(`disconnected`);
+        clearInterval(inter);
         saveDocument();
     });
-
-    // print out every ten seconds
-    setInterval(saveDocument, rate);
 });
 
 // set up static paths

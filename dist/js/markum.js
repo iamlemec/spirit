@@ -339,6 +339,8 @@ function parseBlock(src) {
             child = new Svg(body, args);
         } else if (tag == 'gum') {
             child = new Gum(body, args);
+        } else if (tag == 'code') {
+            child = new Code(body, args);
         }
         return new Figure(child, {ftype, id, caption, title, number});
     }
@@ -504,8 +506,7 @@ function parseInline(src) {
         if (cap = inline.ilink.exec(src)) {
             let [mat, rargs] = cap;
             let {id, ...args} = parseArgs(rargs, false, false);
-            let inner = parseInline(id);
-            out.push(new Link(inner, args));
+            out.push(new Internal(id, args));
             src = src.substring(mat.length);
             continue;
         }
@@ -1079,6 +1080,19 @@ class Reference extends Element {
     }
 }
 
+class Internal extends Element {
+    constructor(id, args) {
+        let attr = args ?? {};
+        let attr1 = mergeAttr(attr, {class: 'reference'});
+        super('a', false, attr1);
+        this.id = id;
+    }
+
+    html(ctx) {
+        return `<a class="internal" href="/${this.id}">${this.id}</a>`;
+    }
+}
+
 class Citation extends Div {
     constructor(tag, args) {
         let attr = args ?? {};
@@ -1215,7 +1229,8 @@ class Blockquote extends Div {
 class Code extends Element {
     constructor(code, args) {
         let {lang, ...attr} = args ?? {};
-        let attr1 = mergeAttr(attr, {class: `code code-${lang}`});
+        let klass = (lang != null) ? `code code-${lang}` : 'code';
+        let attr1 = mergeAttr(attr, {class: klass});
         super('div', false, attr1);
         this.code = code;
         this.lang = lang ?? null;
