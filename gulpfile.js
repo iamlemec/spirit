@@ -2,7 +2,6 @@ import { rollup } from 'rollup'
 import resolve from '@rollup/plugin-node-resolve'
 import gulp from 'gulp'
 import rename from 'gulp-rename'
-import connect from 'gulp-connect'
 
 // store values globally
 let cache = {};
