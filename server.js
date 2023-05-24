@@ -15,8 +15,6 @@ const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({server});
 
-// const heart = '💖';
-
 // config variables
 const port = 8000;
 const rate = 10000;
@@ -102,8 +100,7 @@ wss.on('connection', ws => {
 });
 
 // set up static paths
-let dist = path.join(__dirname, 'dist');
-app.use(express.static(dist));
+app.use(express.static(__dirname));
 
 // connect serve index
 app.get('/', (req, res) => {
