@@ -2,7 +2,7 @@
 
 export { initSpirit }
 
-import { SpiritEditor, enableResize } from './spirit.js'
+import { SpiritEditor, enableResize, getCookie, setCookie } from './spirit.js'
 
 class Connection extends EventTarget {
     constructor(url) {
@@ -35,17 +35,17 @@ class Connection extends EventTarget {
         }));
     }
 
-    sendUpdates(doc, chg) {
+    sendUpdates(doc, upd) {
         if (this.ws.readyState) {
             this.ws.send(JSON.stringify({
-                cmd: 'update', doc, data: chg.toJSON()
+                cmd: 'update', doc, data: upd.changes.toJSON()
             }));
         }
     }
 }
 
 function initSpirit(doc) {
-    let url = 'ws://localhost:8000';
+    console.log(`initSpirit: ${doc}`);
 
     // global elements
     let left = document.querySelector('#left');
@@ -54,27 +54,35 @@ function initSpirit(doc) {
 
     // resize panels
     enableResize(left, right, mid);
-
-    // make the actual editor
     let editor = new SpiritEditor(left, right);
-    let connect = new Connection(url);
 
-    // connect editor events
-    editor.addEventListener('update', evt => {
-        connect.sendUpdates(doc, evt.detail);
-    });
-
-    // connect server events
-    connect.addEventListener('load', evt => {
-        editor.loadDocument(evt.detail);
-    });
-
-    // open the first document
+    // server or no-server mode
     if (doc) {
+        // connect with server
+        const port = 8000;
+        let connect = new Connection(`ws://localhost:${port}`);
+
+        // connect editor events
+        editor.addEventListener('update', evt => {
+            connect.sendUpdates(doc, evt.detail);
+        });
+
+        // connect server events
+        connect.addEventListener('load', evt => {
+            editor.loadDocument(evt.detail);
+        });
+
         connect.addEventListener('open', evt => {
             connect.loadDocument(doc);
         });
     } else {
-        editor.loadDocument();
+        // connect cookie storage
+        editor.addEventListener('update', evt => {
+            setCookie('spirit', evt.detail.text);
+        });
+
+        // no server mode
+        let text = getCookie('spirit');
+        editor.loadDocument(text);
     }
 }

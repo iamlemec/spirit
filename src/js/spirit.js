@@ -7,7 +7,7 @@ import { markdown } from '@codemirror/lang-markdown'
 import { minimalSetup } from 'codemirror'
 import { parseDocument } from './markum.js'
 
-export { SpiritEditor, enableResize }
+export { SpiritEditor, enableResize, getCookie, setCookie }
 
 const readOnly = new Compartment();
 
@@ -51,11 +51,9 @@ class SpiritEditor extends EventTarget {
         super();
         this.code = code;
         this.disp = disp;
-        this.init = false;
-
-        // init editor
+        this.emit = false;
         this.edit = readWriteEditor(code, upd => {
-            if (this.init && upd.docChanged) {
+            if (this.emit && upd.docChanged) {
                 this.applyUpdate(upd);
             }
         });
@@ -63,18 +61,20 @@ class SpiritEditor extends EventTarget {
 
     loadDocument(src) {
         if (src) {
+            this.emit = false;
             this.setCode(src);
             this.setDisp(src);
         }
-        this.init = true;
+        this.emit = true;
         this.setReadOnly(false);
     }
 
     applyUpdate(upd) {
         let text = getText(upd.state);
+        let detail = {text, changes: upd.changes};
         this.setDisp(text);
         this.dispatchEvent(
-            new CustomEvent('update', {detail: upd.changes})
+            new CustomEvent('update', {detail})
         );
     }
 
@@ -95,6 +95,24 @@ class SpiritEditor extends EventTarget {
     }
 }
 
+// cookie tools
+function getCookie(key) {
+    let cookies = document.cookie.split(';').map(x => x.trim().split('='));
+    let cell = cookies.filter(([k, v]) => k == key).shift();
+    if (cell == null) {
+        return null;
+    } else {
+        let [_, val] = cell;
+        return decodeURIComponent(val);
+    }
+}
+
+function setCookie(key, val) {
+    let enc = encodeURIComponent(val);
+    document.cookie = `${key}=${enc}; SameSite=Lax`;
+}
+
+// resize panels
 function enableResize(left, right, mid) {
     let base = left.getBoundingClientRect().left;
     function resizePane(e) {

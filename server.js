@@ -41,7 +41,7 @@ function loadFile(fpath) {
     let text = '';
     try {
         text = fs.readFileSync(fpath, 'utf8');
-        console.log(`reading file: ${fpath}`);
+        console.log(`loading file: ${fpath}`);
     } catch (err) {
         console.log(`creating file: ${fpath}`);
         createFile(fpath);
@@ -56,8 +56,21 @@ wss.on('connection', ws => {
     // load default document
     let fpath = null;
     let state = Text.of(['']);
+    let stale = false;
 
-    // hanlde incoming messages
+    // flush update cache
+    function saveDocument() {
+        if (stale) {
+            stale = false;
+            if (fpath != null) {
+                let text = state.toString();
+                console.log(`writing ${fpath} [${text.length} bytes]`);
+                fs.writeFileSync(fpath, text, 'utf8');
+            }
+        }
+    }
+
+    // handle incoming messages
     ws.on('message', msg => {
         console.log(`received: ${msg}`);
         let {cmd, doc, data} = JSON.parse(msg);
@@ -78,18 +91,14 @@ wss.on('connection', ws => {
         }
     });
 
+    // handle disconnect
+    ws.on('close', () => {
+        console.log(`disconnected`);
+        saveDocument();
+    });
+
     // print out every ten seconds
-    let stale = false;
-    setInterval(() => {
-        if (stale) {
-            stale = false;
-            if (fpath != null) {
-                let text = state.toString();
-                console.log(`writing ${fpath} [${text.length}]`);
-                fs.writeFileSync(fpath, text, 'utf8');
-            }
-        }
-    }, rate);
+    setInterval(saveDocument, rate);
 });
 
 // set up static paths
