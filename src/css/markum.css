@@ -129,6 +129,16 @@ a.reference.fail {
     color: var(--neon-red);
 }
 
+/* parse errors */
+
+.error-prefix {
+    font-weight: bold;
+}
+
+.error-message {
+    color: var(--neon-red);
+}
+
 /* popups */
 
 .popup {

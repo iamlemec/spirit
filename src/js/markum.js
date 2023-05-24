@@ -175,8 +175,16 @@ inline.footnote = replace(inline.footnote)
  * Document Parser
  */
 
+function parseBlockRobust(src) {
+    try {
+        return parseBlock(src);
+    } catch (err) {
+        return new ErrorMessage(err.message);
+    }
+}
+
 function parseDocument(src) {
-    let blocks = src.trim().split(/\n{2,}/).map(parseBlock);
+    let blocks = src.trim().split(/\n{2,}/).map(parseBlockRobust);
     blocks = blocks.map(b => new Block(b));
     return new Document(blocks);
 }
@@ -973,6 +981,14 @@ class Text extends Element {
 
     inner(ctx) {
         return this.text;
+    }
+}
+
+class ErrorMessage extends Span {
+    constructor(message) {
+        let etag = new Span('Parse error', {class: 'error-prefix'});
+        let emsg = new Span(message, {class: 'error-message'});
+        super([etag, ': ', emsg], {class: 'error'});
     }
 }
 
