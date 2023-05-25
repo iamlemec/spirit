@@ -44,6 +44,24 @@ class Connection extends EventTarget {
     }
 }
 
+class External {
+    constructor() {
+        this.imgs = new Map();
+    }
+
+    async getImg(id) {
+        if (this.imgs.has(id)) {
+            return this.imgs.get(id);
+        } else {
+            let resp = await fetch(`/img/${id}`);
+            let blob = await resp.blob();
+            let url = URL.createObjectURL(blob);
+            this.imgs.set(id, url);
+            return url;
+        }
+    }
+}
+
 function initSpirit(doc) {
     console.log(`initSpirit: ${doc}`);
 
@@ -51,13 +69,14 @@ function initSpirit(doc) {
     let left = document.querySelector('#left');
     let right = document.querySelector('#right');
     let mid = document.querySelector('#mid');
-
-    // resize panels
     enableResize(left, right, mid);
-    let editor = new SpiritEditor(left, right);
 
     // server or no-server mode
     if (doc) {
+        // make connected editor
+        let extern = new External();
+        let editor = new SpiritEditor(left, right, extern);
+
         // connect with server
         const port = 8000;
         let connect = new Connection(`ws://localhost:${port}`);
@@ -76,6 +95,9 @@ function initSpirit(doc) {
             connect.loadDocument(doc);
         });
     } else {
+        // make bare bones editor
+        let editor = new SpiritEditor(left, right, null);
+
         // connect cookie storage
         editor.addEventListener('update', evt => {
             setCookie('spirit', evt.detail.text);

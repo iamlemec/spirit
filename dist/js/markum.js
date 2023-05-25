@@ -332,7 +332,8 @@ function parseBlock(src) {
                 child = new Div(e.message);
             }
         } else if (tag == 'img') {
-            child = new Image(body, args);
+            let {key, ...args1} = args;
+            child = new InternalImage(key, args1);
         } else if (tag == 'vid') {
             child = new Video(body, args);
         } else if (tag == 'svg') {
@@ -506,7 +507,7 @@ function parseInline(src) {
         if (cap = inline.ilink.exec(src)) {
             let [mat, rargs] = cap;
             let {id, ...args} = parseArgs(rargs, false, false);
-            out.push(new Internal(id, args));
+            out.push(new InternalLink(id, args));
             src = src.substring(mat.length);
             continue;
         }
@@ -652,7 +653,8 @@ class DefaultCounter {
  */
 
 class Context {
-    constructor() {
+    constructor(extern) {
+        this.extern = extern ?? null;
         this.count = new DefaultCounter();
         this.refer = new Map();
         this.popup = new Map();
@@ -697,6 +699,14 @@ class Context {
     outPop() {
         this.inPopup = false;
     }
+
+    async getImg(id) {
+        if (this.extern != null) {
+            return await this.extern.getImg(id);
+        } else {
+            return null;
+        }
+    }
 }
 
 class Element {
@@ -706,20 +716,20 @@ class Element {
         this.attr = attr ?? {};
     }
 
-    refs(ctx) {
+    async refs(ctx) {
     }
 
-    props(ctx) {
+    async props(ctx) {
         return this.attr;
     }
 
-    inner(ctx) {
+    async inner(ctx) {
         return '';
     }
 
-    html(ctx) {
+    async html(ctx) {
         // collect all properties
-        let pvals = this.props(ctx);
+        let pvals = await this.props(ctx);
         let props = props_repr(pvals);
         let pre = props.length > 0 ? ' ' : '';
 
@@ -727,24 +737,37 @@ class Element {
         if (this.unary) {
             return `<${this.tag}${pre}${props} />`;
         } else {
-            let ivals = this.inner(ctx);
+            let ivals = await this.inner(ctx);
             return `<${this.tag}${pre}${props}>${ivals}</${this.tag}>`;
         }
     }
 }
 
+// be sure to run through children sequentially with await
 class Container extends Element {
     constructor(tag, children, args) {
         super(tag, false, args);
         this.children = ensureArray(children);
     }
 
-    refs(ctx) {
-        this.children.forEach(c => (c instanceof Element) ? c.refs(ctx) : null);
+    async refs(ctx) {
+        for (let c of this.children) {
+            if (c instanceof Element) {
+                await c.refs(ctx);
+            }
+        }
     }
 
-    inner(ctx) {
-        return this.children.map(c => (c instanceof Element) ? c.html(ctx) : c).join('');
+    async inner(ctx) {
+        let out = [];
+        for (let c of this.children) {
+            if (c instanceof Element) {
+                out.push(await c.html(ctx));
+            } else {
+                out.push(c);
+            }
+        }
+        return out.join('');
     }
 }
 
@@ -773,10 +796,10 @@ class Document extends Container {
         super('div', children, args);
     }
 
-    html() {
-        let ctx = new Context();
-        this.refs(ctx);
-        return this.inner(ctx);
+    async html(extern) {
+        let ctx = new Context(extern);
+        await this.refs(ctx);
+        return await this.inner(ctx);
     }
 }
 
@@ -1062,12 +1085,13 @@ class Reference extends Element {
     }
 
     // pull ref/popup from context
-    html(ctx) {
+    async html(ctx) {
         let targ = null;
         if (!ctx.inPopup && ctx.hasPop(this.id)) {
             // don't recurse
             ctx.innPop();
-            targ = ctx.getPop(this.id).html(ctx);
+            let pelem = ctx.getPop(this.id);
+            targ = await pelem.html(ctx);
             ctx.outPop();
         }
         if (ctx.hasRef(this.id)) {
@@ -1080,16 +1104,16 @@ class Reference extends Element {
     }
 }
 
-class Internal extends Element {
+class InternalLink extends Element {
     constructor(id, args) {
         let attr = args ?? {};
-        let attr1 = mergeAttr(attr, {class: 'reference'});
+        let attr1 = mergeAttr(attr, {class: 'internal-link', href: `/${id}`});
         super('a', false, attr1);
         this.id = id;
     }
 
-    html(ctx) {
-        return `<a class="internal" href="/${this.id}">${this.id}</a>`;
+    inner(ctx) {
+        return this.id;
     }
 }
 
@@ -1266,6 +1290,22 @@ class Upload extends Element {
         super();
         this.id = id;
         this.gum = gum ?? false;
+    }
+}
+
+class InternalImage extends Element {
+    constructor(id, args) {
+        let {width, ...attr} = args ?? {};
+        width = width ?? 50;
+        let attr1 = mergeAttr(attr, {class: 'internal-image', style: `width: ${width}%`});
+        super('img', true, attr1);
+        this.id = id;
+    }
+
+    async props(ctx) {
+        let attr0 = await super.props(ctx);
+        let src = await ctx.getImg(this.id);
+        return mergeAttr(attr0, {src});
     }
 }
 

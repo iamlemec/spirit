@@ -47,10 +47,11 @@ function setText(editor, text) {
 }
 
 class SpiritEditor extends EventTarget {
-    constructor(code, disp) {
+    constructor(code, disp, extern) {
         super();
         this.code = code;
         this.disp = disp;
+        this.extern = extern;
         this.emit = false;
         this.edit = readWriteEditor(code, upd => {
             if (this.emit && upd.docChanged) {
@@ -89,9 +90,9 @@ class SpiritEditor extends EventTarget {
         setText(this.edit, src);
     }
 
-    setDisp(src) {
+    async setDisp(src) {
         let tree = parseDocument(src);
-        let html = tree.html();
+        let html = await tree.html(this.extern);
         this.disp.innerHTML = html;
     }
 }

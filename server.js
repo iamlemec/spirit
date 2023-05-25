@@ -142,5 +142,14 @@ app.get('/:doc', (req, res) => {
     res.redirect(`/?doc=${doc}`);
 });
 
+// connect serve image
+app.get('/img/:img', (req, res) => {
+    let img = req.params.img;
+    let ipath = getLocalPath(img);
+    if (ipath != null) {
+        res.sendFile(ipath);
+    }
+});
+
 // start http server
 server.listen(port);
