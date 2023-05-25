@@ -1,4 +1,4 @@
-#! Spirit
+x#! Spirit
 
 Spirit is a light-weight editing framework based on Elltwo ($\ell^2$) and `gum.js`. The back-end is pure text, gotta keep it simple. Below is an example figure made using gum
 

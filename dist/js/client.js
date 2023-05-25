@@ -1,4 +1,4 @@
-import { enableResize, SpiritEditor, setCookie, getCookie } from './spirit.js';
+import { enableResize, SpiritEditor, setCookie, getCookie } from './editor.js';
 
 // spirit editor
 

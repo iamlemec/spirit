@@ -12,8 +12,8 @@ gulp.task('js', () => {
         cache: cache.esm,
         input: [
             'src/js/markum.js',
-            'src/js/spirit.js',
-            'src/js/index.js',
+            'src/js/editor.js',
+            'src/js/client.js',
         ],
         plugins: [
             resolve({
@@ -32,7 +32,7 @@ gulp.task('js', () => {
 });
 
 // spirit css
-gulp.task('css', () => gulp.src(['./src/css/markum.css', './src/css/spirit.css'])
+gulp.task('css', () => gulp.src(['./src/css/markum.css', './src/css/editor.css'])
     .pipe(gulp.dest('./dist/css'))
 );
 
@@ -72,8 +72,8 @@ gulp.task('build', gulp.parallel('js', 'css', 'fonts'));
 
 // spirit serve
 gulp.task('watch', () => {
-    gulp.watch(['src/js/markum.js', 'src/js/spirit.js', 'src/js/index.js'], gulp.series('js'));
-    gulp.watch(['src/css/markum.css', 'src/css/spirit.css'], gulp.series('css'));
+    gulp.watch(['src/js/markum.js', 'src/js/editor.js', 'src/js/client.js'], gulp.series('js'));
+    gulp.watch(['src/css/markum.css', 'src/css/editor.css'], gulp.series('css'));
 });
 
 // spirit devel mode

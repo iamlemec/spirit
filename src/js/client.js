@@ -2,7 +2,7 @@
 
 export { initSpirit }
 
-import { SpiritEditor, enableResize, getCookie, setCookie } from './spirit.js'
+import { SpiritEditor, enableResize, getCookie, setCookie } from './editor.js'
 
 class Connection extends EventTarget {
     constructor(url) {

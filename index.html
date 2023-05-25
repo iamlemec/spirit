@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link rel="stylesheet" href="dist/css/markum.css" />
-<link rel="stylesheet" href="dist/css/spirit.css" />
+<link rel="stylesheet" href="dist/css/editor.css" />
 
 <title>💖 Spirit</title>
 
@@ -25,7 +25,7 @@
 </div>
         
 <script type="module">
-import { initSpirit } from './dist/js/index.js'
+import { initSpirit } from './dist/js/client.js'
 let params = new URLSearchParams(window.location.search);
 let source = params.has('doc') ? params.get('doc') : null;
 initSpirit(source);

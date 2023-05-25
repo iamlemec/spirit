@@ -65,6 +65,7 @@ class SpiritEditor extends EventTarget {
         }
         this.emit = true;
         this.setReadOnly(false);
+        this.edit.focus();
     }
 
     applyUpdate(upd) {

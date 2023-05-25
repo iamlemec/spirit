@@ -1,6 +1,6 @@
 // spirit server
 
-import fs from 'fs'
+import { openSync, closeSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path'
 import { fileURLToPath } from 'url'
 import express from 'express'
@@ -30,15 +30,15 @@ function getLocalPath(name) {
 
 // create an empty file
 function createFile(fpath) {
-    let file = fs.openSync(fpath, 'w');
-    fs.closeSync(file);
+    let file = openSync(fpath, 'w');
+    closeSync(file);
 }
 
 // load text file
 function loadFile(fpath) {
     let text = '';
     try {
-        text = fs.readFileSync(fpath, 'utf8');
+        text = readFileSync(fpath, 'utf8');
         console.log(`loading file: ${fpath}`);
     } catch (err) {
         console.log(`creating file: ${fpath}`);
@@ -47,6 +47,7 @@ function loadFile(fpath) {
     return text;
 }
 
+// self-contained client handler
 class ClientHandler extends EventTarget {
     constructor(ws) {
         super();
@@ -108,7 +109,7 @@ class ClientHandler extends EventTarget {
             if (this.fpath != null) {
                 let text = this.state.toString();
                 console.log(`writing ${this.fpath} [${text.length} bytes]`);
-                fs.writeFileSync(this.fpath, text, 'utf8');
+                writeFileSync(this.fpath, text, 'utf8');
             }
         }
     }
