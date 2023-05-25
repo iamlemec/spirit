@@ -5,7 +5,7 @@
  *
  */
 
-export { parseInline, parseBlock, parseDocument }
+export { parseInline, parseBlock, parseDocument, Context }
 
 import katex from 'katex'
 import {
@@ -679,6 +679,7 @@ class DefaultCounter {
 class Context {
     constructor(extern) {
         this.extern = extern ?? null;
+        this.title = null;
         this.count = new DefaultCounter();
         this.refer = new Map();
         this.popup = new Map();
@@ -1246,6 +1247,10 @@ class Title extends Div {
         let attr = args ?? {};
         let attr1 = mergeAttr(attr, {class: 'title'});
         super(children, attr1);
+    }
+
+    refs(ctx) {
+        ctx.title = this;
     }
 }
 

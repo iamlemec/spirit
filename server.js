@@ -142,12 +142,21 @@ app.get('/:doc', (req, res) => {
     res.redirect(`/?doc=${doc}`);
 });
 
+// connect serve text
+app.get('/txt/:txt', (req, res) => {
+    let txt = req.params.txt;
+    let fpath = getLocalPath(txt);
+    if (fpath != null) {
+        res.sendFile(fpath);
+    }
+});
+
 // connect serve image
 app.get('/img/:img', (req, res) => {
     let img = req.params.img;
-    let ipath = getLocalPath(img);
-    if (ipath != null) {
-        res.sendFile(ipath);
+    let fpath = getLocalPath(img);
+    if (fpath != null) {
+        res.sendFile(fpath);
     }
 });
 

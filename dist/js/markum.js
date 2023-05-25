@@ -655,6 +655,7 @@ class DefaultCounter {
 class Context {
     constructor(extern) {
         this.extern = extern ?? null;
+        this.title = null;
         this.count = new DefaultCounter();
         this.refer = new Map();
         this.popup = new Map();
@@ -1223,6 +1224,10 @@ class Title extends Div {
         let attr1 = mergeAttr(attr, {class: 'title'});
         super(children, attr1);
     }
+
+    refs(ctx) {
+        ctx.title = this;
+    }
 }
 
 class Heading extends Div {
@@ -1333,4 +1338,4 @@ class EnvEnd extends Container {
     }
 }
 
-export { parseBlock, parseDocument, parseInline };
+export { Context, parseBlock, parseDocument, parseInline };
