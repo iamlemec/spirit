@@ -14,11 +14,11 @@ body {
 }
 
 #left {
-    width: 50%;
+    width: 55%;
 }
 
 #right {
-    width: 50%;
+    width: 45%;
     background-color: #EEE;
     overflow-y: scroll;
 }
@@ -41,7 +41,6 @@ body {
 /* elltwo */
 
 .block {
-    border: 1px solid #ccc;
     padding: 10px;
     margin: 10px;
 }

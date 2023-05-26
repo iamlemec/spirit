@@ -122,6 +122,12 @@ table th, table td {
     white-space: pre-wrap;
 }
 
+/* math */
+
+.katex-display {
+    margin: 0;
+}
+
 /* references */
 
 a.reference, a.internal {
