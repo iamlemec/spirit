@@ -16,6 +16,7 @@ const server = createServer(app);
 const wss = new WebSocketServer({server});
 
 // config variables
+const addr = 'localhost';
 const port = 8000;
 const rate = 10000;
 const store = path.join(__dirname, 'store');
@@ -161,4 +162,5 @@ app.get('/img/:img', (req, res) => {
 });
 
 // start http server
-server.listen(port);
+console.log(`serving on: http://${addr}:${port}`);
+server.listen(port, addr);

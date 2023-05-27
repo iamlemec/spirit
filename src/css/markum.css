@@ -21,7 +21,12 @@
 }
 
 .monospace {
+    font-size: 95%;
     font-family: monospace;
+    background-color: rgba(0, 0, 0, 0.07);
+    border-radius: 3px;
+    padding: 0.15em 0.25em;
+    vertical-align: 0.15em;
 }
 
 .strikeout {
@@ -167,7 +172,6 @@ a.reference.fail, a.internal.fail {
     background-color: black;
     opacity: 0.9;
     font-family: unset;
-    z-index: 1;
 }
 
 .popper {

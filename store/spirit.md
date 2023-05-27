@@ -16,4 +16,4 @@ Let's try out some fancy math, which we can reference here @[eqn]. And let's not
 $$ [eqn]
 \int_0^1 \exp(-x^2) dx = \sqrt{\pi}
 
-Ahh, it's time to relax. And you know what that means: a glass of wine, your favorite easy chair, and this compact disk playing on your home stereo. So go on, indulge yourself. Kick off your shoes, put your feet up, lean back and just enjoy the melodides. Because after all, music soothes even the savage beast.
+Ahh, it's time to relax. And you know what that means: a glass of wine, your favorite easy chair, and this compact disk playing on your home stereo. So go on, indulge yourself. Kick off your shoes, put your feet up, lean back and just enjoy the melodies. Because after all, music soothes even the savage beast.
