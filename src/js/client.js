@@ -25,6 +25,8 @@ class Connection extends EventTarget {
                 this.dispatchEvent(
                     new CustomEvent('load', {detail: data})
                 );
+            } else {
+                console.log(`unknown command: ${cmd}`);
             }
         });
     }
@@ -42,11 +44,19 @@ class Connection extends EventTarget {
             }));
         }
     }
+
+    reloadIndex() {
+        this.ws.send(JSON.stringify({
+            cmd: 'reindex'
+        }));
+    }
 }
 
 class External {
     constructor() {
         this.imgs = new Map();
+        this.refs = new Map();
+        this.pops = new Map();
     }
 
     async getImg(id) {
@@ -59,6 +69,42 @@ class External {
             this.imgs.set(id, url);
             return url;
         }
+    }
+
+    async getRef(id) {
+        if (this.refs.has(id)) {
+            return this.refs.get(id);
+        } else {
+            let resp = await fetch(`/ref/${id}`);
+            if (resp.ok) {
+                let text = await resp.text();
+                this.refs.set(id, text);
+                return text;
+            } else {
+                return null;
+            }
+        }
+    }
+
+    async getPop(id) {
+        if (this.pops.has(id)) {
+            return this.pops.get(id);
+        } else {
+            let resp = await fetch(`/pop/${id}`);
+            if (resp.ok) {
+                let html = await resp.text();
+                this.pops.set(id, html);
+                return html;
+            } else {
+                return null;
+            }
+        }
+    }
+
+    invalidate() {
+        this.imgs.clear();
+        this.refs.clear();
+        this.pops.clear();
     }
 }
 
@@ -81,16 +127,29 @@ function initSpirit(doc) {
         const port = 8000;
         let connect = new Connection(`ws://localhost:${port}`);
 
-        // connect editor events
+        // connect update event
         editor.addEventListener('update', evt => {
             connect.sendUpdates(doc, evt.detail);
         });
 
-        // connect server events
+        // connect refresh event
+        document.onkeydown = evt => {
+            if (evt.key == 'F5') {
+                console.log('reindexing');
+                connect.reloadIndex();
+                extern.invalidate();
+                return false;
+            } else {
+                return true;
+            }
+        };
+
+        // connect load event
         connect.addEventListener('load', evt => {
             editor.loadDocument(evt.detail);
         });
 
+        // connect open event
         connect.addEventListener('open', evt => {
             connect.loadDocument(doc);
         });

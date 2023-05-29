@@ -5,6 +5,8 @@ import path from 'path'
 import url from 'url'
 import { parseDocument, Context } from './src/js/markum.js'
 
+export { indexAll }
+
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const store = path.join(__dirname, 'store');
@@ -25,41 +27,39 @@ async function parseRefs(doc) {
     let ctx = new Context();
     await tree.refs(ctx);
 
-    // parse title inner
-    let title = await ctx.title.inner(ctx);
+    // parse title and blurb
+    let ttext = await ctx.title.inner(ctx);
+    tree.children = tree.children.slice(0, 2);
+    let prev = await tree.html();
 
-    // collect refs text
-    let refs = new Map();
-    for (let [k, v] of ctx.refer) {
-        refs.set(`${doc}:${k}`, `${title}: ${v}`);
-    }
-
-    // collect popup html
-    let pops = new Map();
+    // parse popups
     for (let [k, v] of ctx.popup) {
-        pops.set(`${doc}:${k}`, await v.inner(ctx));
+        ctx.popup.set(k, await v.html(ctx));
     }
 
     // return results
-    return {title, refs, pops};
+    return {
+        title: ttext, blurb: prev,
+        refs: ctx.refer, pops: ctx.popup
+    };
 }
 
 // document index store
 class Index {
     constructor(docs) {
-        this.docs = new Map();
         this.refs = new Map();
         this.pops = new Map();
     }
 
     async indexDoc(doc) {
-        let {title, refs, pops} = await parseRefs(doc);
-        this.docs.set(doc, title);
+        let {title, blurb, refs, pops} = await parseRefs(doc);
+        this.refs.set(doc, title);
+        this.pops.set(doc, blurb);
         for (let [k, v] of refs) {
-            this.refs.set(k, v);
+            this.refs.set(`${doc}:${k}`, `${title}: ${v}`);
         }
         for (let [k, v] of pops) {
-            this.pops.set(k, v);
+            this.pops.set(`${doc}:${k}`, v);
         }
     }
 
@@ -70,14 +70,13 @@ class Index {
     }
 
     unindexDoc(doc) {
-        this.docs.delete(doc);
         for (let [k, v] of this.refs) {
-            if (v.startsWith(`${doc}: `)) {
+            if (v.startsWith(`${doc}#`)) {
                 this.refs.delete(k);
             }
         }
         for (let [k, v] of this.pops) {
-            if (v.startsWith(`${doc}: `)) {
+            if (v.startsWith(`${doc}#`)) {
                 this.pops.delete(k);
             }
         }
@@ -86,6 +85,7 @@ class Index {
 
 // index entire corpus
 async function indexAll() {
+    console.log('indexing all files');
     let files = fs.readdirSync(store);
     let txts = files.filter(x => istxt.test(x));
     let imgs = files.filter(x => isimg.test(x));
@@ -93,9 +93,3 @@ async function indexAll() {
     await index.indexDocs(txts);
     return index;
 }
-
-// print output
-let index = await indexAll();
-console.log('titles:', index.docs);
-console.log('refers:', index.refs);
-console.log('popups:', [...index.pops].map(([k, v]) => [k, v.length]));

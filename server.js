@@ -1,12 +1,15 @@
 // spirit server
 
-import { openSync, closeSync, readFileSync, writeFileSync } from 'fs';
+import fs from 'fs';
 import path from 'path'
+import readline from 'readline'
 import { fileURLToPath } from 'url'
 import express from 'express'
 import { createServer } from 'http'
 import { WebSocketServer } from 'ws'
 import {ChangeSet, Text} from '@codemirror/state'
+
+import { indexAll } from './index.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,21 +34,33 @@ function getLocalPath(name) {
 
 // create an empty file
 function createFile(fpath) {
-    let file = openSync(fpath, 'w');
-    closeSync(file);
+    let file = fs.openSync(fpath, 'w');
+    fs.closeSync(file);
 }
 
 // load text file
 function loadFile(fpath) {
     let text = '';
     try {
-        text = readFileSync(fpath, 'utf8');
+        text = fs.readFileSync(fpath, 'utf8');
         console.log(`loading file: ${fpath}`);
     } catch (err) {
         console.log(`creating file: ${fpath}`);
-        createFile(fpath);
+        fs.createFile(fpath);
     }
     return text;
+}
+
+function sendExists(res, fpath) {
+    fpath = getLocalPath(fpath);
+    if (fpath != null) {
+        try {
+            fs.accessSync(fpath, fs.constants.R_OK);
+            res.sendFile(fpath);
+        } catch {
+            res.sendStatus(404);
+        }
+    }
 }
 
 // self-contained client handler
@@ -72,6 +87,12 @@ class ClientHandler extends EventTarget {
             } else if (cmd == 'update') {
                 let chg = ChangeSet.fromJSON(data);
                 this.update(chg);
+            } else if (cmd == 'reindex') {
+                this.dispatchEvent(
+                    new Event('reindex')
+                );
+            } else {
+                console.log(`unknown command: ${cmd}`);
             }
         });
 
@@ -110,11 +131,15 @@ class ClientHandler extends EventTarget {
             if (this.fpath != null) {
                 let text = this.state.toString();
                 console.log(`writing ${this.fpath} [${text.length} bytes]`);
-                writeFileSync(this.fpath, text, 'utf8');
+                fs.writeFileSync(this.fpath, text, 'utf8');
             }
         }
     }
 }
+
+// index existing files
+let index = await indexAll();
+console.log(index.docs);
 
 // set up client map
 let clients = new Map();
@@ -126,6 +151,9 @@ wss.on('connection', ws => {
     clients.set(ws, handler);
     handler.addEventListener('close', () => {
         clients.delete(ws);
+    });
+    handler.addEventListener('reindex', async () => {
+        index = await indexAll();
     });
 });
 
@@ -146,18 +174,34 @@ app.get('/:doc', (req, res) => {
 // connect serve text
 app.get('/txt/:txt', (req, res) => {
     let txt = req.params.txt;
-    let fpath = getLocalPath(txt);
-    if (fpath != null) {
-        res.sendFile(fpath);
-    }
+    sendExists(res, txt);
 });
 
 // connect serve image
 app.get('/img/:img', (req, res) => {
     let img = req.params.img;
-    let fpath = getLocalPath(img);
-    if (fpath != null) {
-        res.sendFile(fpath);
+    sendExists(res, img);
+});
+
+// connect serve reference
+app.get('/ref/:ref', (req, res) => {
+    let ref = req.params.ref;
+    console.log(`GET: /ref/${ref}`);
+    if (index.refs.has(ref)) {
+        res.send(index.refs.get(ref));
+    } else {
+        res.sendStatus(404);
+    }
+});
+
+// connect serve popup
+app.get('/pop/:pop', (req, res) => {
+    let pop = req.params.pop;
+    console.log(`GET: /pop/${pop}`);
+    if (index.pops.has(pop)) {
+        res.send(index.pops.get(pop));
+    } else {
+        res.sendStatus(404);
     }
 });
 

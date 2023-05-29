@@ -184,18 +184,14 @@ function parsePrefix(pre) {
 }
 
 // variable argument parser (inside []'s)
-function parseArgs(argsraw, number=true, set=true) {
+function parseArgs(argsraw) {
     if (argsraw == null) {
         return {};
     }
 
     let fst;
     let args = {};
-    let rx = /[^a-zA-Z\d\_\-]/; // invalid chars for arg labels and id's
-
-    if (!set) {
-        rx = /[^a-zA-Z\d\_\-\:]/; // allow : for references
-    }
+    let rx = /[^a-zA-Z\d\_\-\.\:]/;
 
     // using lookbehinds, might not work on old browsers.
     argsraw.split(/(?<!\\)\||\n/)
@@ -487,7 +483,7 @@ function parseInline(src) {
         if (cap = inline.refcite.exec(src)) {
             let [mat, pre, rargs] = cap;
             let cls = (pre == '@') ? Reference : Citation;
-            let {id, ...args} = parseArgs(rargs, false, false);
+            let {id, ...args} = parseArgs(rargs);
             out.push(new cls(id, args));
             src = src.substring(mat.length);
             continue;
@@ -503,11 +499,11 @@ function parseInline(src) {
             continue;
         }
 
-        // internal link
+        // external link
         if (cap = inline.ilink.exec(src)) {
             let [mat, rargs] = cap;
-            let {id, ...args} = parseArgs(rargs, false, false);
-            out.push(new InternalLink(id, args));
+            let {id, ...args} = parseArgs(rargs);
+            out.push(new ExtRef(id, args));
             src = src.substring(mat.length);
             continue;
         }
@@ -693,17 +689,25 @@ class Context {
         return this.popup.has(id);
     }
 
-    innPop() {
-        this.inPopup = true;
-    }
-
-    outPop() {
-        this.inPopup = false;
-    }
-
     async getImg(id) {
         if (this.extern != null) {
             return await this.extern.getImg(id);
+        } else {
+            return null;
+        }
+    }
+
+    async getExtRef(id) {
+        if (this.extern != null) {
+            return await this.extern.getRef(id);
+        } else {
+            return null;
+        }
+    }
+
+    async getExtPop(id) {
+        if (this.extern != null) {
+            return await this.extern.getPop(id);
         } else {
             return null;
         }
@@ -1080,8 +1084,7 @@ class Monospace extends Text {
 class Reference extends Element {
     constructor(id, args) {
         let attr = args ?? {};
-        let attr1 = mergeAttr(attr, {class: 'reference'});
-        super('a', false, attr1);
+        super('a', false, attr);
         this.id = id;
     }
 
@@ -1090,10 +1093,10 @@ class Reference extends Element {
         let targ = null;
         if (!ctx.inPopup && ctx.hasPop(this.id)) {
             // don't recurse
-            ctx.innPop();
+            ctx.inPopup = true;
             let pelem = ctx.getPop(this.id);
             targ = await pelem.html(ctx);
-            ctx.outPop();
+            ctx.inPopup = false;
         }
         if (ctx.hasRef(this.id)) {
             let ref = ctx.getRef(this.id);
@@ -1105,16 +1108,29 @@ class Reference extends Element {
     }
 }
 
-class InternalLink extends Element {
+class ExtRef extends Element {
     constructor(id, args) {
         let attr = args ?? {};
-        let attr1 = mergeAttr(attr, {class: 'internal-link', href: `/${id}`});
-        super('a', false, attr1);
+        super('a', false, attr);
         this.id = id;
     }
 
-    inner(ctx) {
-        return this.id;
+    // pull ref/popup from context
+    async html(ctx) {
+        let targ = null;
+        if (!ctx.inPopup) {
+            // don't recurse
+            ctx.inPopup = true;
+            targ = await ctx.getExtPop(this.id);
+            ctx.inPopup = false;
+        }
+        let ref = await ctx.getExtRef(this.id);
+        if (ref != null) {
+            let pop = (targ != null) ? `<div class="popup">${targ}</div>` : '';
+            return `<span class="popper"><a href="#${this.id}" class="reference external">${ref}</a>${pop}</span>`;
+        } else {
+            return `<a class="reference external fail">@${this.id}</a>`;
+        }
     }
 }
 

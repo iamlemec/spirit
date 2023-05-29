@@ -135,15 +135,15 @@ table th, table td {
 
 /* references */
 
-a.reference, a.internal {
+a.reference {
     text-decoration: none;
 }
 
-a.reference, a.reference:visited, a.internal, a.internal:visited {
+a.reference, a.reference:visited {
     color: var(--neon-blue);
 }
 
-a.reference.fail, a.internal.fail {
+a.reference.fail {
     color: var(--neon-red);
 }
 
@@ -193,6 +193,15 @@ a.reference.fail, a.internal.fail {
 
 .popup .table th {
     border-bottom: 2px solid white;
+}
+
+.popup .title {
+    font-size: 24px;
+    text-align: center;
+}
+
+.popup .block {
+    padding: 0;
 }
 
 /* footnote */
