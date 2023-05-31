@@ -154,20 +154,66 @@ class ClientHandler extends EventTarget {
     }
 }
 
+class Router {
+    constructor() {
+        this.docs = new Map(); // document state for fpath
+        this.clis = new Multimap(); // groups clients by fpath
+        this.abrt = new Map(); // abort controller for client
+    }
+
+    add(fpath, ch) {
+        // open document if needed
+        if (!this.docs.has(fpath)) {
+            this.docs.set(fpath, new DocumentHandler(fpath));
+        }
+        let dh = this.docs.get(fpath);
+
+        // add client to multimap
+        this.clis.add(fpath, ch);
+
+        // hook up event listeners
+        let control = new AbortController();
+        this.abrt.set(ch, control);
+        ch.addEventListener('update', e => {
+            let chg = e.detail;
+            dh.update(chg);
+        }, { signal: control.signal });
+
+        // send document to client
+        let text = dh.text();
+        ch.load(text);
+    }
+
+    del(ch) {
+        this.abrt.get(ch).abort();
+        let fpath = this.clis.pop(ch);
+        if (this.clis.num(fpath) == 0) {
+            let dh = this.docs.get(fpath);
+            dh.close();
+            this.docs.delete(fpath);
+        }
+    }
+
+    has(ch) {
+        return this.clis.has(ch);
+    }
+}
+
 // index existing files
 let index = await indexAll();
 console.log(index.docs);
 
-// set up client map
-let docs = new Map();
-let clis = new Multimap();
+// create client router
+let router = new Router();
 
 // connect websocket
 wss.on('connection', ws => {
     console.log(`connected`);
+
+    // create client handler
     let ch = new ClientHandler(ws);
 
-    // real action starts on load
+    // real action happens on load
     ch.addEventListener('load', evt => {
         let doc = evt.detail;
 
@@ -178,33 +224,18 @@ wss.on('connection', ws => {
             return;
         }
 
-        // open document if needed
-        if (!docs.has(fpath)) {
-            docs.set(fpath, new DocumentHandler(fpath));
+        // disconnect if already connected
+        if (router.has(ch)) {
+            router.del(ch);
         }
-        let dh = docs.get(fpath);
 
-        // add client to multimap
-        clis.add(fpath, ch);
+        // connect client to document
+        router.add(fpath, ch);
+    });
 
-        // hook up event listeners
-        let control = new AbortController();
-        ch.addEventListener('update', e => {
-            let chg = e.detail;
-            dh.update(chg);
-        }, { signal: control.signal });
-        ch.addEventListener('close', e => {
-            clis.pop(ch);
-            control.abort();
-            if (clis.num(fpath) == 0) {
-                dh.close();
-                docs.delete(fpath);
-            }
-        }, { signal: control.signal });
-
-        // send document to client
-        let text = dh.text();
-        ch.load(text);
+    // remove client on close
+    ch.addEventListener('close', () => {
+        router.del(ch);
     });
 
     // reindex on request
