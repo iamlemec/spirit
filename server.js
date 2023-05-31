@@ -2,7 +2,6 @@
 
 import fs from 'fs';
 import path from 'path'
-import readline from 'readline'
 import { fileURLToPath } from 'url'
 import express from 'express'
 import { createServer } from 'http'
@@ -10,6 +9,7 @@ import { WebSocketServer } from 'ws'
 import {ChangeSet, Text} from '@codemirror/state'
 
 import { indexAll } from './index.js'
+import { Multimap } from './src/js/utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,30 +63,72 @@ function sendExists(res, fpath) {
     }
 }
 
+class DocumentHandler extends EventTarget {
+    constructor(fpath) {
+        super();
+        this.fpath = fpath;
+
+        // track clients
+        this.clients = new Set();
+
+        // handle auto-save
+        this.taint = false;
+        this.timer = setInterval(() => {
+            this.save();
+        }, rate);
+
+        // load document
+        let text = loadFile(this.fpath);
+        this.state = Text.of(text.split('\n'));
+    }
+
+    update(chg) {
+        this.state = chg.apply(this.state);
+        this.taint = true;
+    }
+
+    save() {
+        if (this.taint) {
+            this.taint = false;
+            let text = this.state.toString();
+            console.log(`writing ${this.fpath} [${text.length} bytes]`);
+            fs.writeFileSync(this.fpath, text, 'utf8');
+        }
+    }
+
+    close() {
+        clearInterval(this.timer);
+        this.save();
+        this.dispatchEvent(
+            new Event('close')
+        );
+    }
+
+    text() {
+        return this.state.toString();
+    }
+}
+
 // self-contained client handler
+// emits: load, update, close, reindex
 class ClientHandler extends EventTarget {
     constructor(ws) {
         super();
         this.ws = ws;
-
-        // initialize state
-        this.fpath = null;
-        this.state = Text.of(['']);
-        this.taint = false;
 
         // handle incoming messages
         ws.on('message', msg => {
             console.log(`received: ${msg}`);
             let {cmd, doc, data} = JSON.parse(msg);
             if (cmd == 'load') {
-                if ((this.fpath = getLocalPath(doc)) == null) {
-                    console.log(`non-local path: ${doc}`);
-                } else {
-                    this.load(doc);
-                }
+                this.dispatchEvent(
+                    new CustomEvent('load', { detail: doc })
+                );
             } else if (cmd == 'update') {
                 let chg = ChangeSet.fromJSON(data);
-                this.update(chg);
+                this.dispatchEvent(
+                    new CustomEvent('update', { detail: chg })
+                );
             } else if (cmd == 'reindex') {
                 this.dispatchEvent(
                     new Event('reindex')
@@ -99,41 +141,16 @@ class ClientHandler extends EventTarget {
         // handle closure
         ws.on('close', () => {
             console.log(`disconnected`);
-            clearInterval(this.timer);
-            this.save();
             this.dispatchEvent(
                 new Event('close')
             );
         });
-
-        // set up autosave
-        this.timer = setInterval(() => {
-            this.save();
-        }, rate);
     }
 
-    load(doc) {
-        let text = loadFile(this.fpath);
-        this.state = Text.of(text.split('\n'));
+    load(text) {
         this.ws.send(JSON.stringify({
             cmd: 'load', data: text
         }));
-    }
-
-    update(chg) {
-        this.state = chg.apply(this.state);
-        this.stale = true;
-    }
-
-    save() {
-        if (this.stale) {
-            this.stale = false;
-            if (this.fpath != null) {
-                let text = this.state.toString();
-                console.log(`writing ${this.fpath} [${text.length} bytes]`);
-                fs.writeFileSync(this.fpath, text, 'utf8');
-            }
-        }
     }
 }
 
@@ -142,17 +159,56 @@ let index = await indexAll();
 console.log(index.docs);
 
 // set up client map
-let clients = new Map();
+let docs = new Map();
+let clis = new Multimap();
 
 // connect websocket
 wss.on('connection', ws => {
     console.log(`connected`);
-    let handler = new ClientHandler(ws);
-    clients.set(ws, handler);
-    handler.addEventListener('close', () => {
-        clients.delete(ws);
+    let ch = new ClientHandler(ws);
+
+    // real action starts on load
+    ch.addEventListener('load', evt => {
+        let doc = evt.detail;
+
+        // ensure path is local
+        let fpath = getLocalPath(doc);
+        if (fpath == null) {
+            console.log(`non-local path: ${doc}`);
+            return;
+        }
+
+        // open document if needed
+        if (!docs.has(fpath)) {
+            docs.set(fpath, new DocumentHandler(fpath));
+        }
+        let dh = docs.get(fpath);
+
+        // add client to multimap
+        clis.add(fpath, ch);
+
+        // hook up event listeners
+        let control = new AbortController();
+        ch.addEventListener('update', e => {
+            let chg = e.detail;
+            dh.update(chg);
+        }, { signal: control.signal });
+        ch.addEventListener('close', e => {
+            clis.pop(ch);
+            control.abort();
+            if (clis.num(fpath) == 0) {
+                dh.close();
+                docs.delete(fpath);
+            }
+        }, { signal: control.signal });
+
+        // send document to client
+        let text = dh.text();
+        ch.load(text);
     });
-    handler.addEventListener('reindex', async () => {
+
+    // reindex on request
+    ch.addEventListener('reindex', async () => {
         index = await indexAll();
     });
 });
