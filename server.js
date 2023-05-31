@@ -185,12 +185,23 @@ class Router {
     }
 
     del(ch) {
+        // noop if not present
+        if (!this.clis.has(ch)) {
+            return;
+        }
+
+        // disconnect handlers
         this.abrt.get(ch).abort();
+        this.abrt.delete(ch);
+
+        // remove client from multimap
         let fpath = this.clis.pop(ch);
+
+        // close document if no connections
         if (this.clis.num(fpath) == 0) {
             let dh = this.docs.get(fpath);
-            dh.close();
             this.docs.delete(fpath);
+            dh.close();
         }
     }
 
