@@ -53,9 +53,10 @@ class SpiritEditor extends EventTarget {
         this.disp = disp;
         this.extern = extern;
         this.emit = false;
+        this.readonly = true;
         this.edit = readWriteEditor(code, upd => {
             if (this.emit && upd.docChanged) {
-                this.applyUpdate(upd);
+                this.sendUpdate(upd);
             }
         });
     }
@@ -67,11 +68,10 @@ class SpiritEditor extends EventTarget {
             this.setDisp(src);
         }
         this.emit = true;
-        this.setReadOnly(false);
         this.edit.focus();
     }
 
-    applyUpdate(upd) {
+    sendUpdate(upd) {
         let text = getText(upd.state);
         let detail = {text, changes: upd.changes};
         this.setDisp(text);
@@ -80,7 +80,13 @@ class SpiritEditor extends EventTarget {
         );
     }
 
+    applyUpdate(chg) {
+        let upd = this.edit.state.update({changes: chg});
+        this.edit.dispatch(upd);
+    }
+
     setReadOnly(flag) {
+        this.readonly = flag;
         this.edit.dispatch({
             effects: readOnly.reconfigure(EditorState.readOnly.of(flag))
         });

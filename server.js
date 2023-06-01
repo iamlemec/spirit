@@ -133,6 +133,10 @@ class ClientHandler extends EventTarget {
                 this.dispatchEvent(
                     new Event('reindex')
                 );
+            } else if (cmd == 'save') {
+                this.dispatchEvent(
+                    new Event('save')
+                )
             } else {
                 console.log(`unknown command: ${cmd}`);
             }
@@ -152,9 +156,21 @@ class ClientHandler extends EventTarget {
             cmd: 'load', data: text
         }));
     }
+
+    readonly(val) {
+        this.ws.send(JSON.stringify({
+            cmd: 'readonly', data: val
+        }));
+    }
+
+    update(chg) {
+        this.ws.send(JSON.stringify({
+            cmd: 'update', data: chg.toJSON()
+        }));
+    }
 }
 
-class Router {
+class ClientRouter {
     constructor() {
         this.docs = new Map(); // document state for fpath
         this.clis = new Multimap(); // groups clients by fpath
@@ -176,12 +192,32 @@ class Router {
         this.abrt.set(ch, control);
         ch.addEventListener('update', e => {
             let chg = e.detail;
-            dh.update(chg);
+            let [first, ...rest] = this.clis.get(fpath);
+            if (ch == first) {
+                dh.update(chg);
+                for (let cli of rest) {
+                    cli.update(chg);
+                }
+            } else {
+                console.log(`got "update" from non-leader`);
+            }
+        }, { signal: control.signal });
+        ch.addEventListener('save', () => {
+            let first = this.clis.get(fpath).get(0);
+            if (ch == first) {
+                dh.save();
+            } else {
+                console.log(`got "save" from non-leader`);
+            }
         }, { signal: control.signal });
 
         // send document to client
         let text = dh.text();
         ch.load(text);
+
+        // set client to read-only
+        let ro = this.clis.num(fpath) > 1;
+        ch.readonly(ro);
     }
 
     del(ch) {
@@ -195,13 +231,19 @@ class Router {
         this.abrt.delete(ch);
 
         // remove client from multimap
+        let idx = this.clis.idx(ch);
         let fpath = this.clis.pop(ch);
 
-        // close document if no connections
+        // update connections
         if (this.clis.num(fpath) == 0) {
+            // close document
             let dh = this.docs.get(fpath);
             this.docs.delete(fpath);
             dh.close();
+        } else if (idx == 0) {
+            // set new leader
+            let first = this.clis.get(fpath).get(0);
+            first.readonly(false);
         }
     }
 
@@ -215,7 +257,7 @@ let index = await indexAll();
 console.log(index.docs);
 
 // create client router
-let router = new Router();
+let router = new ClientRouter();
 
 // connect websocket
 wss.on('connection', ws => {

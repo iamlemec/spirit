@@ -3,6 +3,7 @@
 export { initSpirit }
 
 import { SpiritEditor, enableResize, getCookie, setCookie } from './editor.js'
+import { ChangeSet } from '@codemirror/state'
 
 class Connection extends EventTarget {
     constructor(url) {
@@ -25,6 +26,15 @@ class Connection extends EventTarget {
                 this.dispatchEvent(
                     new CustomEvent('load', {detail: data})
                 );
+            } else if (cmd == 'readonly') {
+                this.dispatchEvent(
+                    new CustomEvent('readonly', {detail: data})
+                );
+            } else if (cmd == 'update') {
+                let chg = ChangeSet.fromJSON(data);
+                this.dispatchEvent(
+                    new CustomEvent('update', {detail: chg})
+                );
             } else {
                 console.log(`unknown command: ${cmd}`);
             }
@@ -43,6 +53,12 @@ class Connection extends EventTarget {
                 cmd: 'update', doc, data: upd.changes.toJSON()
             }));
         }
+    }
+
+    saveDocument(doc) {
+        this.ws.send(JSON.stringify({
+            cmd: 'save', doc
+        }));
     }
 
     reloadIndex() {
@@ -134,19 +150,36 @@ function initSpirit(doc) {
 
         // connect refresh event
         document.onkeydown = evt => {
-            if (evt.key == 'F5') {
-                console.log('reindexing');
-                connect.reloadIndex();
-                extern.invalidate();
-                return false;
-            } else {
-                return true;
+            if (!editor.readonly) {
+                if (evt.key == 'F5') {
+                    console.log('reindexing');
+                    connect.reloadIndex();
+                    extern.invalidate();
+                    return false;
+                } else if (evt.ctrlKey && evt.key == 's') {
+                    console.log('saving');
+                    connect.saveDocument(doc);
+                    return false;
+                }
             }
         };
 
         // connect load event
         connect.addEventListener('load', evt => {
-            editor.loadDocument(evt.detail);
+            let text = evt.detail;
+            editor.loadDocument(text);
+        });
+
+        // connect update event
+        connect.addEventListener('update', evt => {
+            let chg = evt.detail;
+            editor.applyUpdate(chg);
+        });
+
+        // connect readonly event
+        connect.addEventListener('readonly', evt => {
+            let ro = evt.detail;
+            editor.setReadOnly(ro);
         });
 
         // connect open event
