@@ -274,6 +274,14 @@ wss.on('connection', ws => {
         let fpath = getLocalPath(doc);
         if (fpath == null) {
             console.log(`non-local path: ${doc}`);
+            ch.load(`document "${doc}" is non-local`);
+            return;
+        }
+
+        // ensure path exists
+        if (!fs.existsSync(fpath)) {
+            console.log(`non-existent path: ${fpath}`);
+            ch.load(`document "${doc}" not found`);
             return;
         }
 

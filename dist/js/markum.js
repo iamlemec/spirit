@@ -1126,10 +1126,11 @@ class ExtRef extends Element {
         }
         let ref = await ctx.getExtRef(this.id);
         if (ref != null) {
+            let url = this.id.replace(/:/, '#');
             let pop = (targ != null) ? `<div class="popup">${targ}</div>` : '';
-            return `<span class="popper"><a href="#${this.id}" class="reference external">${ref}</a>${pop}</span>`;
+            return `<span class="popper"><a href="/${url}" class="reference external">${ref}</a>${pop}</span>`;
         } else {
-            return `<a class="reference external fail">@${this.id}</a>`;
+            return `<a class="reference external fail">[[${this.id}]]</a>`;
         }
     }
 }
