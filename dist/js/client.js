@@ -191,12 +191,14 @@ function initSpirit(doc) {
 
         // connect cookie storage
         editor.addEventListener('update', evt => {
-            setCookie('spirit', evt.detail.text);
+            let { text } = evt.detail;
+            setCookie('spirit', text);
         });
 
         // no server mode
         let text = getCookie('spirit');
         editor.loadDocument(text);
+        editor.setReadOnly(false);
     }
 }
 
