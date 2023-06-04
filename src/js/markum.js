@@ -957,6 +957,8 @@ class Caption extends Div {
         }
         let attr1 = mergeAttr(attr, {'class': 'caption'});
         super(children, attr1);
+        this.ftype = ftype;
+        this.number = number;
     }
 }
 
@@ -968,6 +970,9 @@ class Figure extends Div {
         let attr1 = mergeAttr(attr, {'class': ftype, id});
         super([child, caption], attr1);
         this.id = id;
+        this.ftype = ftype;
+        this.number = number;
+        this.caption = caption;
     }
 
     refs(ctx) {
@@ -986,6 +991,8 @@ class Equation extends Div {
         let attr1 = mergeAttr(attr, {class: 'equation', id});
         super([math, num], attr1);
         this.id = id;
+        this.tex = tex;
+        this.number = number;
         this.math = math;
     }
 
@@ -1252,6 +1259,7 @@ class Table extends Container {
             ))
         );
         super('table', [head, body], attr);
+        this.align = align;
     }
 }
 

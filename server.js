@@ -32,12 +32,6 @@ function getLocalPath(name) {
     return local ? fpath : null;
 }
 
-// create an empty file
-function createFile(fpath) {
-    let file = fs.openSync(fpath, 'w');
-    fs.closeSync(file);
-}
-
 // load text file
 function loadFile(fpath) {
     let text = '';
