@@ -2,14 +2,12 @@
 
 import fs from 'fs'
 import path from 'path'
-import url from 'url'
-import { parseDocument, Context } from './src/js/markum.js'
+import { parseDocument, Context } from './markum.js'
 
 export { indexAll }
 
-const __filename = url.fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const store = path.join(__dirname, 'store');
+// config variables
+const store = './store';
 
 // string tools
 const regext = e => new RegExp(`\.(?:${e})$`);
@@ -84,8 +82,8 @@ class Index {
 }
 
 // index entire corpus
-async function indexAll() {
-    console.log('indexing all files');
+async function indexAll(store) {
+    console.log(`indexing all files in: ${store}`);
     let files = fs.readdirSync(store);
     let txts = files.filter(x => istxt.test(x));
     let imgs = files.filter(x => isimg.test(x));

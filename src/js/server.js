@@ -2,27 +2,23 @@
 
 import fs from 'fs';
 import path from 'path'
-import { fileURLToPath } from 'url'
 import express from 'express'
 import { createServer } from 'http'
 import { WebSocketServer } from 'ws'
 import {ChangeSet, Text} from '@codemirror/state'
 
 import { indexAll } from './index.js'
-import { Multimap } from './src/js/utils.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { Multimap } from './utils.js';
 
 const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({server});
 
 // config variables
+const store = './store';
 const addr = 'localhost';
 const port = 8000;
 const rate = 10000;
-const store = path.join(__dirname, 'store');
 
 // check if subdirectory
 function getLocalPath(name) {
@@ -247,7 +243,7 @@ class ClientRouter {
 }
 
 // index existing files
-let index = await indexAll();
+let index = await indexAll(store);
 console.log(index.docs);
 
 // create client router
@@ -295,16 +291,16 @@ wss.on('connection', ws => {
 
     // reindex on request
     ch.addEventListener('reindex', async () => {
-        index = await indexAll();
+        index = await indexAll(store);
     });
 });
 
 // set up static paths
-app.use(express.static(__dirname));
+app.use(express.static('.'));
 
 // connect serve index
 app.get('/', (req, res) => {
-    res.sendFile('index.html', { root: __dirname });
+    res.sendFile('index.html', { root: '.' });
 });
 
 // connect serve document
