@@ -165,7 +165,7 @@ a.reference.fail {
     left: 50%;
     top: 50%;
     transform: translate(-50%, calc(-100% - 15px));
-    min-width: 250px;
+    min-width: 50px;
     border-radius: 5px;
     padding: 10px;
     color: white;
@@ -184,6 +184,11 @@ a.reference.fail {
 
 .popup .popup {
     display: none !important;
+}
+
+.popup .figure,
+.popup .table {
+    min-width: 300px;
 }
 
 .popup .gum svg,

@@ -11,7 +11,7 @@ Let's try out some fancy math, which we can reference here @[eqn]. And here's a 
 !fig [id=offspring|caption=Opening monologue for "Spirit Youth Energy" by The Offspring]
 Ahh, it's time to relax. And you know what that means: a glass of wine, your favorite easy chair, and this compact disk playing on your home stereo. So go on, indulge yourself. Kick off your shoes, put your feet up, lean back and just enjoy the melodies. Because after all, music soothes even the savage beast.
 
-which we can reference with @[offspring]. Now let's try a table too
+which we can reference with @[offspring]. Now let's try a table with some handy GPU stats for the modern era
 
 !tab [id=table|caption=Some GPU related stats]
 | Model    | VRAM (GB) | TF32 (TFLOPS) |
