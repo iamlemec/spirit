@@ -848,10 +848,15 @@ class Math extends Element {
     constructor(tex, args) {
         let {display, multiline, ...attr} = args ?? {};
         display = display ?? false;
+        multiline = multiline ?? false;
+
+        // set up element
         let tag = display ? 'div' : 'span';
         let attr1 = mergeAttr(attr, {class: 'math'});
         super(tag, false, attr1);
-        this.tex = this.multiline ? `\\begin{aligned}${tex}\\end{aligned}` : tex;
+
+        // store for katex rendering
+        this.tex = multiline ? `\\begin{aligned}${tex}\\end{aligned}` : tex;
         this.display = display;
     }
 
@@ -962,10 +967,16 @@ class Figure extends Div {
 class Equation extends Div {
     constructor(tex, args) {
         let {multiline, number, id, tag, ...attr} = args ?? {};
+        multiline = multiline ?? false;
+        number = number ?? true;
+
+        // set up inner math and optional numbering
         let math = new Math(tex, {multiline, display: true});
-        let num = (number != null) ? new Number('equation', {title: tag, id}) : null;
+        let num = number ? new Number('equation', {title: tag, id}) : null;
         let attr1 = mergeAttr(attr, {class: 'equation', id});
         super([math, num], attr1);
+
+        // store for ref/pop and latex render
         this.id = id;
         this.tex = tex;
         this.number = number;
