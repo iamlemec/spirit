@@ -5,7 +5,7 @@ import { bracketMatching } from '@codemirror/language'
 import { javascript } from '@codemirror/lang-javascript'
 import { markdown } from '@codemirror/lang-markdown'
 import { minimalSetup } from 'codemirror'
-import { parseDocument } from './markum.js'
+import { Context, parseDocument } from './markum.js'
 
 export { SpiritEditor, enableResize, getCookie, setCookie }
 
@@ -98,7 +98,9 @@ class SpiritEditor extends EventTarget {
 
     async setDisp(src) {
         let tree = parseDocument(src);
-        let html = await tree.html(this.extern);
+        let ctx = new Context(this.extern);
+        await tree.refs(ctx);
+        let html = await tree.html(ctx);
         this.disp.innerHTML = html;
     }
 }

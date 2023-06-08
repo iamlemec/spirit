@@ -5,7 +5,7 @@ import { bracketMatching } from '../node_modules/@codemirror/language/dist/index
 import { javascript } from '../node_modules/@codemirror/lang-javascript/dist/index.js';
 import { markdown } from '../node_modules/@codemirror/lang-markdown/dist/index.js';
 import { minimalSetup } from '../node_modules/codemirror/dist/index.js';
-import { parseDocument } from './markum.js';
+import { parseDocument, Context } from './markum.js';
 
 const readOnly = new Compartment();
 
@@ -96,7 +96,9 @@ class SpiritEditor extends EventTarget {
 
     async setDisp(src) {
         let tree = parseDocument(src);
-        let html = await tree.html(this.extern);
+        let ctx = new Context(this.extern);
+        await tree.refs(ctx);
+        let html = await tree.html(ctx);
         this.disp.innerHTML = html;
     }
 }

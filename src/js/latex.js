@@ -1,8 +1,6 @@
 // latex rendering
 
-import { Context, parseDocument } from './markum.js';
-
-export { exportLatex }
+export { renderLatex }
 
 function className(x) {
     return x.constructor.name;
@@ -113,12 +111,4 @@ function renderLatex(elem, ctx) {
 
     // fall back to html?
     return `\\texttt{Uknown element of type: ${klass}}`;
-}
-
-function exportLatex(src) {
-    let tree = parseDocument(src);
-    let ctx = new Context();
-    tree.refs(ctx);
-    let tex = renderLatex(tree, ctx);
-    return tex;
 }

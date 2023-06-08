@@ -19,3 +19,5 @@ $$ [eqn]
 Ahh, it's time to relax. And you know what that means: a glass of wine, your favorite easy chair, and this compact disk playing on your home stereo. So go on, indulge yourself. Kick off your shoes, put your feet up, lean back and just enjoy the melodies. Because after all, music soothes even the savage beast.
 
 This is a test of the emergency broadcasting system. Now see [[spirit.md]]. And we can do figures within external documents with [[spirit.md:snek]].
+
+Let's do an external citation now @@[cites.toml:hanley2023].

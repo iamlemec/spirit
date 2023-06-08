@@ -23,6 +23,7 @@
     "gum.js": "github:iamlemec/gum.js",
     "http": "^0.0.1-security",
     "katex": "^0.16.7",
+    "toml": "^3.0.0",
     "ws": "^8.13.0"
   },
   "devDependencies": {

@@ -9,6 +9,7 @@ import {ChangeSet, Text} from '@codemirror/state'
 
 import { indexAll } from './index.js'
 import { Multimap } from './utils.js';
+import { exportHtml, exportLatex } from './export.js';
 
 const app = express();
 const server = createServer(app);
@@ -46,8 +47,8 @@ function sendExists(res, fpath) {
     if (fpath != null) {
         try {
             fs.accessSync(fpath, fs.constants.R_OK);
-            res.sendFile(fpath);
-        } catch {
+            res.sendFile(fpath, { root: '.' });
+        } catch (err) {
             res.sendStatus(404);
         }
     }
@@ -310,9 +311,33 @@ app.get('/:doc', (req, res) => {
 });
 
 // connect serve text
-app.get('/txt/:txt', (req, res) => {
-    let txt = req.params.txt;
-    sendExists(res, txt);
+app.get('/txt/:doc', (req, res) => {
+    let doc = req.params.doc;
+    sendExists(res, doc);
+});
+
+// connect serve html
+app.get('/html/:doc', async (req, res) => {
+    let doc = req.params.doc;
+    let fpath = getLocalPath(doc);
+    if (fpath != null) {
+        let src = loadFile(fpath);
+        let html = await exportHtml(src);
+        res.set('Content-Type', 'text/html');
+        res.send(html);
+    }
+});
+
+// connect serve html
+app.get('/latex/:doc', async (req, res) => {
+    let doc = req.params.doc;
+    let fpath = getLocalPath(doc);
+    if (fpath != null) {
+        let src = loadFile(fpath);
+        let latex = await exportLatex(src);
+        res.set('Content-Type', 'application/x-latex');
+        res.send(latex);
+    }
 });
 
 // connect serve image
@@ -338,6 +363,17 @@ app.get('/pop/:pop', (req, res) => {
     console.log(`GET: /pop/${pop}`);
     if (index.pops.has(pop)) {
         res.send(index.pops.get(pop));
+    } else {
+        res.sendStatus(404);
+    }
+});
+
+// connect serve citation
+app.get('/cit/:cit', (req, res) => {
+    let cit = req.params.cit;
+    console.log(`GET: /cit/${cit}`);
+    if (index.cits.has(cit)) {
+        res.send(index.cits.get(cit));
     } else {
         res.sendStatus(404);
     }

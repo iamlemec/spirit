@@ -2,6 +2,7 @@
 
 import fs from 'fs'
 import path from 'path'
+import toml from 'toml'
 import { parseDocument, Context } from './markum.js'
 
 export { indexAll }
@@ -13,6 +14,7 @@ const store = './store';
 const regext = e => new RegExp(`\.(?:${e})$`);
 const istxt = regext('md');
 const isimg = regext('png|jpg|jpeg|gif');
+const iscit = regext('toml');
 
 // extract refs from documents
 async function parseRefs(doc) {
@@ -42,11 +44,19 @@ async function parseRefs(doc) {
     };
 }
 
+async function parseCites(cit) {
+    let fpath = path.join(store, cit);
+    let text = fs.readFileSync(fpath, 'utf8');
+    let cites = toml.parse(text);
+    return new Map(Object.entries(cites));
+}
+
 // document index store
 class Index {
     constructor(docs) {
         this.refs = new Map();
         this.pops = new Map();
+        this.cits = new Map();
     }
 
     async indexDoc(doc) {
@@ -61,9 +71,22 @@ class Index {
         }
     }
 
+    async indexCite(cit) {
+        let cites = await parseCites(cit);
+        for (let [k, v] of cites) {
+            this.cits.set(`${cit}:${k}`, v);
+        }
+    }
+
     async indexDocs(docs) {
         await Promise.all(
             docs.map(doc => this.indexDoc(doc))
+        );
+    }
+
+    async indexCites(cits) {
+        await Promise.all(
+            cits.map(cit => this.indexCite(cit))
         );
     }
 
@@ -82,12 +105,19 @@ class Index {
 }
 
 // index entire corpus
-async function indexAll(store) {
+async function indexAll() {
     console.log(`indexing all files in: ${store}`);
+
+    // classify files
     let files = fs.readdirSync(store);
     let txts = files.filter(x => istxt.test(x));
     let imgs = files.filter(x => isimg.test(x));
+    let cits = files.filter(x => iscit.test(x));
+
+    // index all documents
     let index = new Index();
     await index.indexDocs(txts);
+    await index.indexCites(cits);
+
     return index;
 }

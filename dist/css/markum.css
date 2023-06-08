@@ -176,6 +176,7 @@ a.reference.fail {
 
 .popper {
     position: relative;
+    overflow: visible;
 }
 
 .popper:hover .popup {
@@ -184,6 +185,14 @@ a.reference.fail {
 
 .popup .popup {
     display: none !important;
+}
+
+.popup.citation {
+    min-width: 250px;
+}
+
+.popup.external {
+    min-width: 300px;
 }
 
 .popup .figure,

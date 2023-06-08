@@ -72,6 +72,7 @@ class External {
         this.imgs = new Map();
         this.refs = new Map();
         this.pops = new Map();
+        this.cits = new Map();
     }
 
     async getImg(id) {
@@ -116,10 +117,26 @@ class External {
         }
     }
 
+    async getCit(id) {
+        if (this.cits.has(id)) {
+            return this.cits.get(id);
+        } else {
+            let resp = await fetch(`/cit/${id}`);
+            if (resp.ok) {
+                let info = await resp.json();
+                this.cits.set(id, info);
+                return info;
+            } else {
+                return null;
+            }
+        }
+    }
+
     invalidate() {
         this.imgs.clear();
         this.refs.clear();
         this.pops.clear();
+        this.cits.clear();
     }
 }
 

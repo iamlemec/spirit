@@ -168,10 +168,10 @@ function parseBlockRobust(src) {
     }
 }
 
-function parseDocument(src) {
+function parseDocument(src, args) {
     let blocks = src.trim().split(/\n{2,}/).map(parseBlockRobust);
     blocks = blocks.map(b => new Block(b));
-    return new Document(blocks);
+    return new Document(blocks, args);
 }
 
 /**
@@ -712,6 +712,14 @@ class Context {
             return null;
         }
     }
+
+    async getCit(id) {
+        if (this.extern != null) {
+            return await this.extern.getCit(id);
+        } else {
+            return null;
+        }
+    }
 }
 
 class Element {
@@ -751,8 +759,10 @@ class Element {
 // be sure to run through children sequentially with await
 class Container extends Element {
     constructor(tag, children, args) {
-        super(tag, false, args);
+        let {pad, ...attr} = args ?? {};
+        super(tag, false, attr);
         this.children = ensureArray(children);
+        this.pad = pad ?? '';
     }
 
     async refs(ctx) {
@@ -764,13 +774,14 @@ class Container extends Element {
     }
 
     async inner(ctx) {
-        let out = [];
+        let out = [this.pad];
         for (let c of this.children) {
             if (c instanceof Element) {
                 out.push(await c.html(ctx));
             } else {
                 out.push(c);
             }
+            out.push(this.pad);
         }
         return out.join('');
     }
@@ -798,13 +809,18 @@ class Block extends Div {
 
 class Document extends Container {
     constructor(children, args) {
-        super('div', children, args);
+        let {bare, ...attr} = args ?? {};
+        let attr1 = {pad: '\n\n', ...attr};
+        super('body', children, attr1);
+        this.bare = bare ?? true;
     }
 
-    async html(extern) {
-        let ctx = new Context(extern);
-        await this.refs(ctx);
-        return await this.inner(ctx);
+    async html(ctx) {
+        if (this.bare) {
+            return await super.inner(ctx);
+        } else {
+            return await super.html(ctx);
+        }
     }
 }
 
@@ -1145,7 +1161,7 @@ class ExtRef extends Element {
         let ref = await ctx.getExtRef(this.id);
         if (ref != null) {
             let url = this.id.replace(/:/, '#');
-            let pop = (targ != null) ? `<div class="popup">${targ}</div>` : '';
+            let pop = (targ != null) ? `<div class="popup external">${targ}</div>` : '';
             return `<span class="popper"><a href="/${url}" class="reference external">${ref}</a>${pop}</span>`;
         } else {
             return `<a class="reference external fail">[[${this.id}]]</a>`;
@@ -1153,16 +1169,25 @@ class ExtRef extends Element {
     }
 }
 
-class Citation extends Div {
-    constructor(tag, args) {
+class Citation extends Element {
+    constructor(id, args) {
         let attr = args ?? {};
-        let link = new Link('', `@@${tag}`);
-        let attr1 = mergeAttr(attr, {class: 'citation'});
-        super(link, attr1);
+        super('a', false, attr);
+        this.id = id;
     }
 
     // pull ref/popup from context
-    // html(ctx) {}
+    async html(ctx) {
+        let cite = await ctx.getCit(this.id);
+        if (cite != null) {
+            let ptxt = `${cite.title}`;
+            let rtxt = `${cite.author} (${cite.year})`;
+            let pop = `<div class="popup citation">${ptxt}</div>`;
+            return `<span class="popper"><a href="" class="reference citation">${rtxt}</a>${pop}</span>`;
+        } else {
+            return `<a class="reference citation fail">@@${this.id}</a>`;
+        }
+    }
 }
 
 class Popup extends Div {
