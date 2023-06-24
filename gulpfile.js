@@ -67,13 +67,19 @@ gulp.task('katex-fonts', gulp.parallel('katex-fonts-css', 'katex-fonts-data'));
 // all fonts
 gulp.task('fonts', gulp.parallel('gum-fonts', 'katex-fonts'));
 
+// all images
+gulp.task('images', () => gulp.src(['./src/img/*'])
+    .pipe(gulp.dest('./dist/img'))
+);
+
 // spirit all
-gulp.task('build', gulp.parallel('js', 'css', 'fonts'));
+gulp.task('build', gulp.parallel('js', 'css', 'fonts', 'images'));
 
 // spirit serve
 gulp.task('watch', () => {
-    gulp.watch(['src/js/markum.js', 'src/js/editor.js', 'src/js/client.js'], gulp.series('js'));
-    gulp.watch(['src/css/markum.css', 'src/css/editor.css'], gulp.series('css'));
+    gulp.watch(['src/js/*'], gulp.series('js'));
+    gulp.watch(['src/css/*'], gulp.series('css'));
+    gulp.watch(['src/img/*'], gulp.series('images'));
 });
 
 // spirit devel mode

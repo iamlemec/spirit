@@ -7,7 +7,7 @@ import { markdown } from '@codemirror/lang-markdown'
 import { minimalSetup } from 'codemirror'
 import { Context, parseDocument } from './markum.js'
 
-export { SpiritEditor, enableResize, getCookie, setCookie }
+export { SpiritEditor, enableResize, getCookie, setCookie, downloadFile }
 
 const readOnly = new Compartment();
 
@@ -34,8 +34,8 @@ function readWriteEditor(parent, update) {
     });
 }
 
-function getText(state) {
-    return state.doc.toString();
+function getText(editor) {
+    return editor.state.doc.toString();
 }
 
 function setText(editor, text) {
@@ -92,6 +92,10 @@ class SpiritEditor extends EventTarget {
         });
     }
 
+    getCode() {
+        return getText(this.edit);
+    }
+
     setCode(src) {
         setText(this.edit, src);
     }
@@ -141,4 +145,16 @@ function enableResize(left, right, mid) {
     document.addEventListener('mouseup', evt => {
         document.removeEventListener('mousemove', resizePane, false);
     }, false);
+}
+
+// download named blob
+function downloadFile(name, blob) {
+    let url = URL.createObjectURL(blob);
+    let elem = document.createElement('a');
+    elem.setAttribute('href', url);
+    elem.setAttribute('download', `${name}`);
+    elem.style.display = 'none';
+    document.body.appendChild(elem);
+    elem.click();
+    document.body.removeChild(elem);
 }

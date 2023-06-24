@@ -14,6 +14,7 @@ body {
 }
 
 #left {
+    position: relative;
     width: 55%;
 }
 
@@ -43,4 +44,42 @@ body {
 .block {
     padding: 10px;
     margin: 10px;
+}
+
+/* svg icons */
+
+#icon-bar {
+    display: flex;
+    gap: 5px;
+    margin: 5px;
+    position: absolute;
+    bottom: 0%;
+    right: 0px;
+    z-index: 10;
+}
+
+svg.icon {
+    padding: 3px;
+    border: 1px solid gray;
+    border-radius: 2px;
+    background-color: #EEE;
+    cursor: pointer;
+    fill: none;
+    stroke: black;
+}
+
+svg.icon.fill {
+    fill: #AAA;
+}
+
+#copy {
+    fill: white;
+}
+
+svg.icon:active {
+    background-color: #DDD;
+}
+
+svg.icon:hover {
+    stroke-width: 1.5px;
 }

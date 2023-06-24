@@ -2,7 +2,7 @@
 
 export { initSpirit }
 
-import { SpiritEditor, enableResize, getCookie, setCookie } from './editor.js'
+import { SpiritEditor, enableResize, getCookie, setCookie, downloadFile } from './editor.js'
 import { ChangeSet } from '@codemirror/state'
 
 class Connection extends EventTarget {
@@ -148,6 +148,7 @@ function initSpirit(doc) {
     let left = document.querySelector('#left');
     let right = document.querySelector('#right');
     let mid = document.querySelector('#mid');
+    let mdn = document.querySelector('#download-button');
     enableResize(left, right, mid);
 
     // server or no-server mode
@@ -203,6 +204,11 @@ function initSpirit(doc) {
         connect.addEventListener('open', evt => {
             connect.loadDocument(doc);
         });
+
+        // connect button handlers
+        mdn.addEventListener('click', evt => {
+            window.location = `/md/${doc}`;
+        });
     } else {
         // make bare bones editor
         let editor = new SpiritEditor(left, right, null);
@@ -211,6 +217,13 @@ function initSpirit(doc) {
         editor.addEventListener('update', evt => {
             let { text } = evt.detail;
             setCookie('spirit', text);
+        });
+
+        // connect button handlers
+        mdn.addEventListener('click', evt => {
+            let text = editor.getCode();
+            let blob = new Blob([text], {type: 'text/markdown'});
+            downloadFile('document.md', blob);
         });
 
         // no server mode

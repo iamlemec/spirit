@@ -32,8 +32,8 @@ function readWriteEditor(parent, update) {
     });
 }
 
-function getText(state) {
-    return state.doc.toString();
+function getText(editor) {
+    return editor.state.doc.toString();
 }
 
 function setText(editor, text) {
@@ -90,6 +90,10 @@ class SpiritEditor extends EventTarget {
         });
     }
 
+    getCode() {
+        return getText(this.edit);
+    }
+
     setCode(src) {
         setText(this.edit, src);
     }
@@ -141,4 +145,16 @@ function enableResize(left, right, mid) {
     }, false);
 }
 
-export { SpiritEditor, enableResize, getCookie, setCookie };
+// download named blob
+function downloadFile(name, blob) {
+    let url = URL.createObjectURL(blob);
+    let elem = document.createElement('a');
+    elem.setAttribute('href', url);
+    elem.setAttribute('download', `${name}`);
+    elem.style.display = 'none';
+    document.body.appendChild(elem);
+    elem.click();
+    document.body.removeChild(elem);
+}
+
+export { SpiritEditor, downloadFile, enableResize, getCookie, setCookie };

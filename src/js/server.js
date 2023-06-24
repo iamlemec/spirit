@@ -311,7 +311,7 @@ app.get('/:doc', (req, res) => {
 });
 
 // connect serve text
-app.get('/txt/:doc', (req, res) => {
+app.get('/md/:doc', (req, res) => {
     let doc = req.params.doc;
     sendExists(res, doc);
 });
