@@ -148,7 +148,9 @@ function initSpirit(doc) {
     let left = document.querySelector('#left');
     let right = document.querySelector('#right');
     let mid = document.querySelector('#mid');
-    let mdn = document.querySelector('#download-button');
+    let mdn = document.querySelector('#markdown-button');
+    let tex = document.querySelector('#latex-button');
+    let pdf = document.querySelector('#pdf-button');
     enableResize(left, right, mid);
 
     // server or no-server mode
@@ -208,6 +210,12 @@ function initSpirit(doc) {
         // connect button handlers
         mdn.addEventListener('click', evt => {
             window.location = `/md/${doc}`;
+        });
+        tex.addEventListener('click', evt => {
+            window.location = `/latex/${doc}`;
+        });
+        pdf.addEventListener('click', evt => {
+            window.location = `/pdf/${doc}`;
         });
     } else {
         // make bare bones editor

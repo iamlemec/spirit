@@ -51,10 +51,9 @@ body {
 #icon-bar {
     display: flex;
     gap: 5px;
-    margin: 5px;
     position: absolute;
-    bottom: 0%;
-    right: 0px;
+    bottom: 0px;
+    right: 5px;
     z-index: 10;
 }
 
@@ -81,5 +80,25 @@ svg.icon:active {
 }
 
 svg.icon:hover {
-    stroke-width: 1.5px;
+    background-color: #CCC;
+}
+
+#download-popup {
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+    position: absolute;
+    bottom: 5px;
+    right: 0px;
+    z-index: 20;
+    visibility: hidden;
+}
+
+#download-section:hover > #download-popup {
+    visibility: visible;
+}
+
+#download-popup > svg {
+    font-family: 'IBMPlexSans';
+    font-weight: 100;
 }
