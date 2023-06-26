@@ -97,8 +97,3 @@ svg.icon:hover {
 #download-section:hover > #download-popup {
     visibility: visible;
 }
-
-#download-popup > svg {
-    font-family: 'IBMPlexSans';
-    font-weight: 100;
-}

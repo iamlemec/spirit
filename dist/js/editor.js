@@ -32,8 +32,8 @@ function readWriteEditor(parent, update) {
     });
 }
 
-function getText(editor) {
-    return editor.state.doc.toString();
+function getText(state) {
+    return state.doc.toString();
 }
 
 function setText(editor, text) {
@@ -91,7 +91,7 @@ class SpiritEditor extends EventTarget {
     }
 
     getCode() {
-        return getText(this.edit);
+        return getText(this.edit.state);
     }
 
     setCode(src) {
