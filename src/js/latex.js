@@ -1,9 +1,25 @@
 // latex rendering
 
-export { renderLatex }
+export { refsLatex, renderLatex }
 
 function className(x) {
     return x.constructor.name;
+}
+
+function refsContainer(cont, ctx) {
+    cont.children.forEach(e => refsLatex(e, ctx));
+}
+
+function refsLatex(elem, ctx) {
+    let klass = className(elem);
+
+    if (klass == 'Document' || klass == 'Container' || klass == 'Block' || klass == 'Div' || klass == 'Span') {
+        return refsContainer(elem, ctx);
+    }
+
+    if (klass == 'Title') {
+        ctx.title = elem;
+    }
 }
 
 function renderList(elems, ctx, sep='') {
