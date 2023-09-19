@@ -35,12 +35,12 @@ program.command('export')
     .argument('<docname>', 'Document name to export')
     .option('-o, --output <output>', 'Output path to export to (stdout if not specified)')
     .option('-f, --format <format>', 'Export format (markdown/html/latex)', 'markdown')
-    .option('-s, --store <store>', 'Document storage path (store)', './store')
+    .option('-s, --store <store>', 'Document storage path (store)')
     .action((doc, opts) => {
         if (opts.format == 'markdown') {
         } else if (opts.format == 'html') {
         } else if (opts.format == 'latex') {
-            let fpath = path.join(opts.store, doc);
+            let fpath = (opts.store != null) ? path.join(opts.store, doc) : doc;
             saveLatex(fpath, opts.output);
         } else {
             console.log(`Unknown format: ${opts.format}`);

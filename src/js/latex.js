@@ -6,6 +6,18 @@ function className(x) {
     return x.constructor.name;
 }
 
+function incrementCounter(ctx, tag, level) {
+    let acc = [];
+    for (let i = 1; i < level; i++) {
+        let num = ctx.getNum(tag) ?? 0;
+        acc.push(num);
+        tag = `${tag}-${num}`;
+    }
+    let fin = ctx.incNum(tag);
+    acc.push(fin);
+    return acc;
+}
+
 function refsContainer(cont, ctx) {
     cont.children.forEach(e => refsLatex(e, ctx));
 }
@@ -51,17 +63,20 @@ function renderLatex(elem, ctx) {
     
     // italic text
     if (klass == 'Italic') {
-        return `\\textit{${elem.text}}`;
+        let text = renderContainer(elem, ctx);
+        return `\\textit{${text}}`;
     }
 
     // bold text
     if (klass == 'Bold') {
-        return `\\textbf{${elem.text}}`;
+        let text = renderContainer(elem, ctx);
+        return `\\textbf{${text}}`;
     }
 
     // monospace text
     if (klass == 'Monospace') {
-        return `\\texttt{${elem.text}}`;
+        let text = renderContainer(elem, ctx);
+        return `\\texttt{${text}}`;
     }
 
     // inline math
@@ -104,6 +119,18 @@ function renderLatex(elem, ctx) {
         return `\\begin{tabular}{${astr}}\n${htex} \\\\\n\\hline\n${btex}\n\\end{tabular}`;
     }
 
+    if (klass == 'Heading') {
+        let level = Math.min(5, elem.level);
+        let text = renderContainer(elem, ctx).trim();
+        return `\\${'sub'.repeat(level)}section{${text}}`;
+    }
+
+    if (klass == 'NestedNumber') {
+        let levels = incrementCounter(ctx, elem.name, elem.level);
+        return '';
+        
+    }
+
     if (klass == 'Title') {
         return '\\maketitle';
     }
@@ -114,15 +141,20 @@ function renderLatex(elem, ctx) {
     
     // top level document
     if (klass == 'Document') {
-        let pack = ['amsmath', 'amssymb', 'cleveref'];
-        let cmds = ['\\setlength{\\parindent}{0cm}'];
+        let pack = ['amsmath', 'amssymb', 'cleveref', 'geometry'];
+        let cmds = [
+            '\\geometry{margin=1.25in}',
+            '\\setlength{\\parindent}{0cm}',
+            '\\setlength{\\parskip}{0.3cm}',
+            '\\renewcommand{\\baselinestretch}{1.1}'
+        ];
         let pre = pack.map(p => `\\usepackage{${p}}`).join('\n') + '\n\n' + cmds.join('\n');
         if (ctx.title != null) {
             let title = renderContainer(ctx.title);
-            pre += `\n\n\\title{${title}}\n\\date{}`;
+            pre += `\n\n\\title{\\vspace{-3em}${title}\\vspace{-3em}}\n\\date{}`;
         }
         let body = renderContainer(elem, ctx, '\n\n');
-        return `\\documentclass{article}\n\n${pre}\n\n\\begin{document}\n\n${body}\n\n\\end{document}\n`;
+        return `\\documentclass[12pt]{article}\n\n${pre}\n\n\\begin{document}\n\n${body}\n\n\\end{document}\n`;
     }
 
     // fall back to html?

@@ -5,7 +5,7 @@
  *
  */
 
-export { parseInline, parseBlock, parseDocument, Context }
+export { parseInline, parseBlock, parseDocument, incrementCounter, Context }
 
 import katex from 'katex'
 import {
@@ -938,6 +938,18 @@ class Number extends Element {
     }
 }
 
+function incrementCounter(ctx, tag, level) {
+    let acc = [];
+    for (let i = 1; i < level; i++) {
+        let num = ctx.getNum(tag) ?? 0;
+        acc.push(num);
+        tag = `${tag}-${num}`;
+    }
+    let fin = ctx.incNum(tag);
+    acc.push(fin);
+    return acc;
+}
+
 class NestedNumber extends Element {
     constructor(name, level, args) {
         let attr = args ?? {};
@@ -948,16 +960,8 @@ class NestedNumber extends Element {
     }
 
     refs(ctx) {
-        let acc = [];
-        let tag = this.name;
-        for (let i = 1; i < this.level; i++) {
-            let num = ctx.getNum(tag) ?? 0;
-            acc.push(num);
-            tag = `${tag}-${num}`;
-        }
-        let fin = ctx.incNum(tag);
-        acc.push(fin);
-        this.num = acc.join('.');
+        let levels = incrementCounter(ctx, this.name, this.level);
+        this.num = levels.join('.');
     }
 
     inner(ctx) {
