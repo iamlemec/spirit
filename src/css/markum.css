@@ -63,6 +63,16 @@
     color: #999;
 }
 
+/* links */
+
+a {
+    text-decoration: none;
+}
+
+a, a:visited {
+    color: var(--neon-blue);
+}
+
 /* equations */
 
 .equation {
@@ -134,14 +144,6 @@ table th, table td {
 }
 
 /* references */
-
-a.reference {
-    text-decoration: none;
-}
-
-a.reference, a.reference:visited {
-    color: var(--neon-blue);
-}
 
 a.reference.fail {
     color: var(--neon-red);

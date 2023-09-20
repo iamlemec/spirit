@@ -161,7 +161,7 @@ function initSpirit(doc) {
 
         // connect with server
         const port = 8000;
-        let connect = new Connection(`ws://localhost:${port}`);
+        let connect = new Connection(`ws://${location.hostname}:${port}`);
 
         // connect update event
         editor.addEventListener('update', evt => {

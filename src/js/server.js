@@ -5,21 +5,15 @@ import path from 'path'
 import express from 'express'
 import { createServer } from 'http'
 import { WebSocketServer } from 'ws'
-import {ChangeSet, Text} from '@codemirror/state'
+import { Command } from 'commander'
+import { ChangeSet, Text } from '@codemirror/state'
 
 import { indexAll } from './index.js'
 import { Multimap } from './utils.js';
 import { exportHtml, exportLatex } from './export.js';
 
-const app = express();
-const server = createServer(app);
-const wss = new WebSocketServer({server});
-
-// config variables
-const store = './store';
-const addr = 'localhost';
-const port = 8000;
-const rate = 10000;
+// global constants
+const rate = 10000; // autosave rate (milliseconds)
 
 // check if subdirectory
 function getLocalPath(name) {
@@ -243,6 +237,26 @@ class ClientRouter {
     }
 }
 
+// get command line arguments
+let program = new Command();
+
+// meta data
+program.name('spirit-server')
+    .description('Spirit Server')
+    .version('0.1')
+    .option('-s, --store <store>', 'Document storage path', './store')
+    .option('-i, --ip <ip>', 'IP address to serve on', 'localhost')
+    .option('-p, --port <port>', 'Port to serve on', 8000);
+
+// execute program
+program.parse();
+const {store, ip, port} = program.opts();
+
+// create server objects
+const app = express();
+const server = createServer(app);
+const wss = new WebSocketServer({server});
+
 // index existing files
 let index = await indexAll(store);
 console.log(index.docs);
@@ -380,5 +394,5 @@ app.get('/cit/:cit', (req, res) => {
 });
 
 // start http server
-console.log(`serving on: http://${addr}:${port}`);
-server.listen(port, addr);
+console.log(`serving on: http://${ip}:${port}`);
+server.listen(port, ip);

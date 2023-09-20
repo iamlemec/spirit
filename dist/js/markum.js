@@ -164,6 +164,7 @@ function parseBlockRobust(src) {
     try {
         return parseBlock(src);
     } catch (err) {
+        console.log(err);
         return new ErrorMessage(err.message);
     }
 }
@@ -373,7 +374,7 @@ function parseBlock(src) {
         let level = hash.length;
         let text = parseInline(body);
         let args = {
-            number: pargs.includes('*'),
+            number: !pargs.includes('*'),
             ...parseArgs(rargs)
         };
         return new Heading(level, text, args);
@@ -526,13 +527,13 @@ function parseInline(src) {
 
         // link
         if (cap = inline.link.exec(src)) {
-            let [mat, pre, text, href, title] = cap;
-            [href, title] = [escape_html(href), escape_html(title)];
+            let [mat, pre, text, href] = cap;
+            href = escape_html(href);
             let elem;
             if (pre == '!') {
                 elem = new Image(href, text);
             } else {
-                inner = parseInline(text);
+                let inner = parseInline(text);
                 elem = new Link(href, inner);
             }
             out.push(elem);
@@ -914,6 +915,18 @@ class Number extends Element {
     }
 }
 
+function incrementCounter(ctx, tag, level) {
+    let acc = [];
+    for (let i = 1; i < level; i++) {
+        let num = ctx.getNum(tag) ?? 0;
+        acc.push(num);
+        tag = `${tag}-${num}`;
+    }
+    let fin = ctx.incNum(tag);
+    acc.push(fin);
+    return acc;
+}
+
 class NestedNumber extends Element {
     constructor(name, level, args) {
         let attr = args ?? {};
@@ -924,16 +937,8 @@ class NestedNumber extends Element {
     }
 
     refs(ctx) {
-        let acc = [];
-        let tag = this.name;
-        for (let i = 1; i < this.level; i++) {
-            let num = ctx.getNum(tag) ?? 0;
-            acc.push(num);
-            tag = `${tag}-${num}`;
-        }
-        let fin = ctx.incNum(tag);
-        acc.push(fin);
-        this.num = acc.join('.');
+        let levels = incrementCounter(ctx, this.name, this.level);
+        this.num = levels.join('.');
     }
 
     inner(ctx) {
@@ -1293,10 +1298,11 @@ class Title extends Div {
 
 class Heading extends Div {
     constructor(level, children, args) {
-        let attr = args ?? {};
+        let {number, ...attr} = args ?? {};
         let attr1 = mergeAttr(attr, {class: `heading heading-${level}`});
         let num = new NestedNumber('heading', level);
-        super([num, ' ', ...children], attr1);
+        children = number ? [num, ' ', ...children] : children;
+        super(children, attr1);
     }
 }
 
@@ -1399,4 +1405,4 @@ class EnvEnd extends Container {
     }
 }
 
-export { Context, parseBlock, parseDocument, parseInline };
+export { Context, incrementCounter, parseBlock, parseDocument, parseInline };

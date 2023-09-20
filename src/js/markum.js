@@ -179,6 +179,7 @@ function parseBlockRobust(src) {
     try {
         return parseBlock(src);
     } catch (err) {
+        console.log(err);
         return new ErrorMessage(err.message);
     }
 }
@@ -397,7 +398,7 @@ function parseBlock(src) {
         let level = hash.length;
         let text = parseInline(body);
         let args = {
-            number: pargs.includes('*'),
+            number: !pargs.includes('*'),
             ...parseArgs(rargs)
         };
         return new Heading(level, text, args);
@@ -550,13 +551,13 @@ function parseInline(src) {
 
         // link
         if (cap = inline.link.exec(src)) {
-            let [mat, pre, text, href, title] = cap;
-            [href, title] = [escape_html(href), escape_html(title)];
+            let [mat, pre, text, href] = cap;
+            href = escape_html(href);
             let elem;
             if (pre == '!') {
                 elem = new Image(href, text);
             } else {
-                inner = parseInline(text);
+                let inner = parseInline(text);
                 elem = new Link(href, inner);
             }
             out.push(elem);
@@ -1321,10 +1322,11 @@ class Title extends Div {
 
 class Heading extends Div {
     constructor(level, children, args) {
-        let attr = args ?? {};
+        let {number, ...attr} = args ?? {};
         let attr1 = mergeAttr(attr, {class: `heading heading-${level}`});
         let num = new NestedNumber('heading', level);
-        super([num, ' ', ...children], attr1);
+        children = number ? [num, ' ', ...children] : children;
+        super(children, attr1);
     }
 }
 
