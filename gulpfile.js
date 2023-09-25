@@ -2,6 +2,8 @@ import { rollup } from 'rollup'
 import resolve from '@rollup/plugin-node-resolve'
 import gulp from 'gulp'
 import rename from 'gulp-rename'
+import { spawn } from 'child_process';
+import { create } from 'browser-sync';
 
 // store values globally
 let cache = {};
@@ -75,7 +77,7 @@ gulp.task('images', () => gulp.src(['./src/img/*'])
 // spirit all
 gulp.task('build', gulp.parallel('js', 'css', 'fonts', 'images'));
 
-// spirit serve
+// spirit watch
 gulp.task('watch', () => {
     gulp.watch(['src/js/*'], gulp.series('js'));
     gulp.watch(['src/css/*'], gulp.series('css'));
@@ -84,3 +86,38 @@ gulp.task('watch', () => {
 
 // spirit devel mode
 gulp.task('devel', gulp.series(['build', 'watch']));
+
+// spirit (re)spawn server
+let server = null;
+let browserSync = create();
+gulp.task('server-spawn', function(done) {
+    if (server != null) {
+        server.kill();
+    }
+    server = spawn(
+        'node', ['src/js/console.js', 'serve'], {stdio: 'inherit'}
+    );
+    browserSync.reload();
+    done();
+});
+
+// spirit watch respawn
+gulp.task('watch-respawn', function() {
+    gulp.watch(['src/js/*'], gulp.series(['js', 'server-spawn']));
+    gulp.watch(['src/css/*'], gulp.series('css'));
+    gulp.watch(['src/img/*'], gulp.series('images'));
+});
+
+
+gulp.task('browser-sync', function(done) {
+    browserSync.init({
+        proxy: "localhost:8000",
+        reloadDelay: 500,
+    });
+    done();
+});
+
+// spirit serve
+gulp.task('serve', gulp.series([
+    'build', 'browser-sync', gulp.parallel(['server-spawn', 'watch-respawn'])
+]));
