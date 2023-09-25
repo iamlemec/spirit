@@ -1001,8 +1001,8 @@ class Figure extends Div {
         this.caption = caption;
     }
 
-    refs(ctx) {
-        super.refs(ctx);
+    async refs(ctx) {
+        await super.refs(ctx);
         if (this.id != null) {
             ctx.addPop(this.id, this);
         }
