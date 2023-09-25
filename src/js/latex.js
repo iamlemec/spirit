@@ -75,8 +75,7 @@ function renderLatex(elem, ctx) {
 
     // monospace text
     if (klass == 'Monospace') {
-        let text = renderContainer(elem, ctx);
-        return `\\texttt{${text}}`;
+        return `\\texttt{${elem.text}}`;
     }
 
     // inline math

@@ -24,6 +24,13 @@ function getLocalPath(store, name) {
     return local ? fpath : null;
 }
 
+// like python splitext
+function splitExtension(fname) {
+    let ext = path.extname(fname);
+    let base = path.basename(fname, ext);
+    return [base, ext];
+}
+
 // load text file
 function loadFile(fpath) {
     let text = '';
@@ -332,11 +339,13 @@ async function serveSpirit(store, ip, port) {
     // connect serve html
     app.get('/latex/:doc', async (req, res) => {
         let doc = req.params.doc;
+        let [name, _] = splitExtension(doc);
         let fpath = getLocalPath(store, doc);
         if (fpath != null) {
             let src = loadFile(fpath);
             let latex = await exportLatex(src);
             res.set('Content-Type', 'application/x-latex');
+            res.set('Content-Disposition', `attachment; filename="${name}.tex"`);
             res.send(latex);
         }
     });
