@@ -3,21 +3,22 @@
 import fs from 'fs'
 import path from 'path'
 import { Command } from 'commander'
-import { Context, parseDocument } from './markum.js'
-import { refsLatex, renderLatex } from './latex.js'
+import { exportHtml, exportLatex } from './export.js'
+import { serveSpirit } from './server.js'
 
-// sub commands
-function saveLatex(fpath, fout) {
-    let src = fs.readFileSync(fpath, 'utf8');
-    let doc = parseDocument(src);
-    let ctx = new Context();
-    refsLatex(doc, ctx);
-    let tex = renderLatex(doc, ctx);
-    if (fout == undefined) {
-        console.log(tex);
+// do conversion
+async function convert(src, fmt) {
+    let out;
+    if (fmt == 'markdown') {
+        out = src;
+    } else if (fmt == 'html') {
+        out = await exportHtml(src);
+    } else if (fmt == 'latex') {
+        out = exportLatex(src);
     } else {
-        fs.writeFileSync(fout, tex);
+        throw new Error(`Unknown format: ${fmt}`);
     }
+    return out;
 }
 
 // create program
@@ -36,15 +37,25 @@ program.command('export')
     .option('-o, --output <output>', 'Output path to export to (stdout if not specified)')
     .option('-f, --format <format>', 'Export format (markdown/html/latex)', 'markdown')
     .option('-s, --store <store>', 'Document storage path (store)')
-    .action((doc, opts) => {
-        if (opts.format == 'markdown') {
-        } else if (opts.format == 'html') {
-        } else if (opts.format == 'latex') {
-            let fpath = (opts.store != null) ? path.join(opts.store, doc) : doc;
-            saveLatex(fpath, opts.output);
+    .action(async (doc, opts) => {
+        let finp = (opts.store != null) ? path.join(opts.store, doc) : doc;
+        let src = fs.readFileSync(finp, 'utf8');
+        let out = await convert(src, opts.format);
+        if (opts.output == undefined) {
+            console.log(out);
         } else {
-            console.log(`Unknown format: ${opts.format}`);
+            fs.writeFileSync(opts.output, out);
         }
+    });
+
+// serve command
+program.command('serve')
+    .description('Run Spirit server')
+    .option('-s, --store <store>', 'Document storage path', './store')
+    .option('-i, --ip <ip>', 'IP address to serve on', 'localhost')
+    .option('-p, --port <port>', 'Port to serve on', 8000)
+    .action(async (opts) => {
+        await serveSpirit(opts.store, opts.ip, opts.port);
     });
 
 // execute program

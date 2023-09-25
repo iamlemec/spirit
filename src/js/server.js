@@ -5,18 +5,19 @@ import path from 'path'
 import express from 'express'
 import { createServer } from 'http'
 import { WebSocketServer } from 'ws'
-import { Command } from 'commander'
 import { ChangeSet, Text } from '@codemirror/state'
 
 import { indexAll } from './index.js'
 import { Multimap } from './utils.js';
 import { exportHtml, exportLatex } from './export.js';
 
+export { serveSpirit }
+
 // global constants
 const rate = 10000; // autosave rate (milliseconds)
 
 // check if subdirectory
-function getLocalPath(name) {
+function getLocalPath(store, name) {
     let fpath = path.join(store, name);
     let rpath = path.relative(store, fpath);
     let local = rpath && !rpath.startsWith('..') && !path.isAbsolute(rpath);
@@ -37,7 +38,6 @@ function loadFile(fpath) {
 }
 
 function sendExists(res, fpath) {
-    fpath = getLocalPath(fpath);
     if (fpath != null) {
         try {
             fs.accessSync(fpath, fs.constants.R_OK);
@@ -237,162 +237,151 @@ class ClientRouter {
     }
 }
 
-// get command line arguments
-let program = new Command();
+// main entry point
+async function serveSpirit(store, ip, port) {
+    // create server objects
+    const app = express();
+    const server = createServer(app);
+    const wss = new WebSocketServer({server});
 
-// meta data
-program.name('spirit-server')
-    .description('Spirit Server')
-    .version('0.1')
-    .option('-s, --store <store>', 'Document storage path', './store')
-    .option('-i, --ip <ip>', 'IP address to serve on', 'localhost')
-    .option('-p, --port <port>', 'Port to serve on', 8000);
+    // index existing files
+    let index = await indexAll(store);
 
-// execute program
-program.parse();
-const {store, ip, port} = program.opts();
+    // create client router
+    let router = new ClientRouter();
 
-// create server objects
-const app = express();
-const server = createServer(app);
-const wss = new WebSocketServer({server});
+    // connect websocket
+    wss.on('connection', ws => {
+        console.log(`connected`);
 
-// index existing files
-let index = await indexAll(store);
-console.log(index.docs);
+        // create client handler
+        let ch = new ClientHandler(ws);
 
-// create client router
-let router = new ClientRouter();
+        // real action happens on load
+        ch.addEventListener('load', evt => {
+            let doc = evt.detail;
 
-// connect websocket
-wss.on('connection', ws => {
-    console.log(`connected`);
+            // ensure path is local
+            let fpath = getLocalPath(store, doc);
+            if (fpath == null) {
+                console.log(`non-local path: ${doc}`);
+                ch.load(`document "${doc}" is non-local`);
+                return;
+            }
 
-    // create client handler
-    let ch = new ClientHandler(ws);
+            // ensure path exists
+            if (!fs.existsSync(fpath)) {
+                console.log(`non-existent path: ${fpath}`);
+                ch.load(`document "${doc}" not found`);
+                return;
+            }
 
-    // real action happens on load
-    ch.addEventListener('load', evt => {
-        let doc = evt.detail;
+            // disconnect if already connected
+            if (router.has(ch)) {
+                router.del(ch);
+            }
 
-        // ensure path is local
-        let fpath = getLocalPath(doc);
-        if (fpath == null) {
-            console.log(`non-local path: ${doc}`);
-            ch.load(`document "${doc}" is non-local`);
-            return;
-        }
+            // connect client to document
+            router.add(fpath, ch);
+        });
 
-        // ensure path exists
-        if (!fs.existsSync(fpath)) {
-            console.log(`non-existent path: ${fpath}`);
-            ch.load(`document "${doc}" not found`);
-            return;
-        }
-
-        // disconnect if already connected
-        if (router.has(ch)) {
+        // remove client on close
+        ch.addEventListener('close', () => {
             router.del(ch);
+        });
+
+        // reindex on request
+        ch.addEventListener('reindex', async () => {
+            index = await indexAll(store);
+        });
+    });
+
+    // set up static paths
+    app.use(express.static('.'));
+
+    // connect serve index
+    app.get('/', (req, res) => {
+        res.sendFile('index.html', { root: '.' });
+    });
+
+    // connect serve document
+    app.get('/:doc', (req, res) => {
+        let doc = req.params.doc;
+        res.redirect(`/?doc=${doc}`);
+    });
+
+    // connect serve text
+    app.get('/md/:doc', (req, res) => {
+        let doc = req.params.doc;
+        let fpath = getLocalPath(store, doc);
+        sendExists(res, fpath);
+    });
+
+    // connect serve html
+    app.get('/html/:doc', async (req, res) => {
+        let doc = req.params.doc;
+        let fpath = getLocalPath(store, doc);
+        if (fpath != null) {
+            let src = loadFile(fpath);
+            let html = await exportHtml(src);
+            res.set('Content-Type', 'text/html');
+            res.send(html);
         }
-
-        // connect client to document
-        router.add(fpath, ch);
     });
 
-    // remove client on close
-    ch.addEventListener('close', () => {
-        router.del(ch);
+    // connect serve html
+    app.get('/latex/:doc', async (req, res) => {
+        let doc = req.params.doc;
+        let fpath = getLocalPath(store, doc);
+        if (fpath != null) {
+            let src = loadFile(fpath);
+            let latex = await exportLatex(src);
+            res.set('Content-Type', 'application/x-latex');
+            res.send(latex);
+        }
     });
 
-    // reindex on request
-    ch.addEventListener('reindex', async () => {
-        index = await indexAll(store);
+    // connect serve image
+    app.get('/img/:img', (req, res) => {
+        let img = req.params.img;
+        let fpath = getLocalPath(store, img);
+        sendExists(res, fpath);
     });
-});
 
-// set up static paths
-app.use(express.static('.'));
+    // connect serve reference
+    app.get('/ref/:ref', (req, res) => {
+        let ref = req.params.ref;
+        console.log(`GET: /ref/${ref}`);
+        if (index.refs.has(ref)) {
+            res.send(index.refs.get(ref));
+        } else {
+            res.sendStatus(404);
+        }
+    });
 
-// connect serve index
-app.get('/', (req, res) => {
-    res.sendFile('index.html', { root: '.' });
-});
+    // connect serve popup
+    app.get('/pop/:pop', (req, res) => {
+        let pop = req.params.pop;
+        console.log(`GET: /pop/${pop}`);
+        if (index.pops.has(pop)) {
+            res.send(index.pops.get(pop));
+        } else {
+            res.sendStatus(404);
+        }
+    });
 
-// connect serve document
-app.get('/:doc', (req, res) => {
-    let doc = req.params.doc;
-    res.redirect(`/?doc=${doc}`);
-});
+    // connect serve citation
+    app.get('/cit/:cit', (req, res) => {
+        let cit = req.params.cit;
+        console.log(`GET: /cit/${cit}`);
+        if (index.cits.has(cit)) {
+            res.send(index.cits.get(cit));
+        } else {
+            res.sendStatus(404);
+        }
+    });
 
-// connect serve text
-app.get('/md/:doc', (req, res) => {
-    let doc = req.params.doc;
-    sendExists(res, doc);
-});
-
-// connect serve html
-app.get('/html/:doc', async (req, res) => {
-    let doc = req.params.doc;
-    let fpath = getLocalPath(doc);
-    if (fpath != null) {
-        let src = loadFile(fpath);
-        let html = await exportHtml(src);
-        res.set('Content-Type', 'text/html');
-        res.send(html);
-    }
-});
-
-// connect serve html
-app.get('/latex/:doc', async (req, res) => {
-    let doc = req.params.doc;
-    let fpath = getLocalPath(doc);
-    if (fpath != null) {
-        let src = loadFile(fpath);
-        let latex = await exportLatex(src);
-        res.set('Content-Type', 'application/x-latex');
-        res.send(latex);
-    }
-});
-
-// connect serve image
-app.get('/img/:img', (req, res) => {
-    let img = req.params.img;
-    sendExists(res, img);
-});
-
-// connect serve reference
-app.get('/ref/:ref', (req, res) => {
-    let ref = req.params.ref;
-    console.log(`GET: /ref/${ref}`);
-    if (index.refs.has(ref)) {
-        res.send(index.refs.get(ref));
-    } else {
-        res.sendStatus(404);
-    }
-});
-
-// connect serve popup
-app.get('/pop/:pop', (req, res) => {
-    let pop = req.params.pop;
-    console.log(`GET: /pop/${pop}`);
-    if (index.pops.has(pop)) {
-        res.send(index.pops.get(pop));
-    } else {
-        res.sendStatus(404);
-    }
-});
-
-// connect serve citation
-app.get('/cit/:cit', (req, res) => {
-    let cit = req.params.cit;
-    console.log(`GET: /cit/${cit}`);
-    if (index.cits.has(cit)) {
-        res.send(index.cits.get(cit));
-    } else {
-        res.sendStatus(404);
-    }
-});
-
-// start http server
-console.log(`serving on: http://${ip}:${port}`);
-server.listen(port, ip);
+    // start http server
+    console.log(`serving on: http://${ip}:${port}`);
+    server.listen(port, ip);
+}
