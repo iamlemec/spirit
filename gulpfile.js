@@ -89,8 +89,8 @@ gulp.task('devel', gulp.series(['build', 'watch']));
 
 // spirit (re)spawn server
 let server = null;
-let browserSync = create();
-gulp.task('server-spawn', function(done) {
+let browserSync = null;
+gulp.task('server-respawn-reload', function(done) {
     if (server != null) {
         server.kill();
     }
@@ -102,14 +102,15 @@ gulp.task('server-spawn', function(done) {
 });
 
 // spirit watch respawn
-gulp.task('watch-respawn', function() {
-    gulp.watch(['src/js/*'], gulp.series(['js', 'server-spawn']));
+gulp.task('watch-respawn-reload', function() {
+    gulp.watch(['src/js/*'], gulp.series(['js', 'server-respawn-reload']));
     gulp.watch(['src/css/*'], gulp.series('css'));
     gulp.watch(['src/img/*'], gulp.series('images'));
 });
 
 
-gulp.task('browser-sync', function(done) {
+gulp.task('browser-sync-init', function(done) {
+    browserSync = create();
     browserSync.init({
         proxy: "localhost:8000",
         reloadDelay: 500,
@@ -118,6 +119,29 @@ gulp.task('browser-sync', function(done) {
 });
 
 // spirit serve
-gulp.task('serve', gulp.series([
-    'build', 'browser-sync', gulp.parallel(['server-spawn', 'watch-respawn'])
+gulp.task('serve-devel', gulp.series([
+    'build', 'browser-sync-init', gulp.parallel(['server-respawn-reload', 'watch-respawn-reload'])
 ]));
+
+// basic spawn
+gulp.task('server-respawn', function(done) {
+    if (server != null) {
+        server.kill();
+    }
+    server = spawn(
+        'node', ['src/js/console.js', 'serve'], {stdio: 'inherit'}
+    );
+    done();
+});
+
+gulp.task('watch-respawn', function() {
+    gulp.watch(['src/js/*'], gulp.series(['js', 'server-respawn']));
+    gulp.watch(['src/css/*'], gulp.series('css'));
+    gulp.watch(['src/img/*'], gulp.series('images'));
+});
+
+// basic serve
+gulp.task('serve', gulp.series([
+    'build', gulp.parallel(['server-respawn', 'watch-respawn'])
+]));
+
