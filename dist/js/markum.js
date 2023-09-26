@@ -1,5 +1,6 @@
 import katex from '../node_modules/katex/dist/katex.js';
 import { props_repr, parseGum, SVG, Element as Element$1, zip } from '../node_modules/gum.js/js/gum.js';
+import { DefaultCounter } from './utils.js';
 
 /**
  *
@@ -627,22 +628,6 @@ function mergeAttr(...args) {
     let attrs = Object.assign({}, ...args);
     attrs['class'] = classes;
     return attrs;
-}
-
-class DefaultCounter {
-    constructor() {
-        this.values = new Map();
-    }
-
-    inc(key) {
-        let val = !this.values.has(key) ? 1 : this.values.get(key) + 1;
-        this.values.set(key, val);
-        return val;
-    }
-
-    get(key) {
-        return this.values.get(key);
-    }
 }
 
 /**

@@ -1,6 +1,6 @@
 // various general tools
 
-export { Multimap }
+export { OrderedSet, Multimap, DefaultCounter }
 
 class OrderedSet {
     constructor() {
@@ -122,5 +122,21 @@ class Multimap {
             console.log(`Item ${item} not found`);
             return null;
         }
+    }
+}
+
+class DefaultCounter {
+    constructor() {
+        this.values = new Map();
+    }
+
+    inc(key) {
+        let val = !this.values.has(key) ? 1 : this.values.get(key) + 1;
+        this.values.set(key, val);
+        return val;
+    }
+
+    get(key) {
+        return this.values.get(key);
     }
 }

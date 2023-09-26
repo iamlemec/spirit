@@ -25,6 +25,11 @@ async function parseRefs(doc) {
     // run refs pass
     let tree = parseDocument(text);
     let ctx = new Context();
+
+    // abort if no title
+    if (ctx.title == null) {
+        return null;
+    }
     await tree.refs(ctx);
 
     // parse title and blurb
@@ -60,7 +65,12 @@ class Index {
     }
 
     async indexDoc(doc) {
-        let {title, blurb, refs, pops} = await parseRefs(doc);
+        let info = await parseRefs(doc);
+        if (info == null) {
+            return;
+        }
+
+        let {title, blurb, refs, pops} = info;
         this.refs.set(doc, title);
         this.pops.set(doc, blurb);
         for (let [k, v] of refs) {

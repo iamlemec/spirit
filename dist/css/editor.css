@@ -29,6 +29,10 @@ body {
     outline: 0;
 }
 
+#left .cm-content {
+    padding-bottom: 200px;
+}
+
 /* resize bar */
 
 #mid {
