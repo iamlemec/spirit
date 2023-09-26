@@ -25,12 +25,12 @@ async function parseRefs(doc) {
     // run refs pass
     let tree = parseDocument(text);
     let ctx = new Context();
+    await tree.refs(ctx);
 
     // abort if no title
     if (ctx.title == null) {
         return null;
     }
-    await tree.refs(ctx);
 
     // parse title and blurb
     let ttext = await ctx.title.inner(ctx);
@@ -116,8 +116,6 @@ class Index {
 
 // index entire corpus
 async function indexAll() {
-    console.log(`indexing all files in: ${store}`);
-
     // classify files
     let files = fs.readdirSync(store);
     let txts = files.filter(x => istxt.test(x));

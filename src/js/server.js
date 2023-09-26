@@ -253,6 +253,7 @@ async function serveSpirit(store, ip, port) {
 
     // index existing files
     let index = await indexAll(store);
+    console.log(`indexed ${index.refs.size} documents in ${store}`);
 
     // create client router
     let router = new ClientRouter();
