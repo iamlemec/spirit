@@ -391,6 +391,14 @@ async function serveSpirit(store, ip, port) {
         }
     });
 
+    // connect serve search
+    app.get('/search/:query', (req, res) => {
+        let query = req.params.query;
+        console.log(`GET: /search/${query}`);
+        let results = index.search(query);
+        res.json(results);
+    });
+
     // start http server
     console.log(`serving on: http://${ip}:${port}`);
     server.listen(port, ip);

@@ -13,10 +13,27 @@ export { SpiritEditor, enableResize, getCookie, setCookie, downloadFile }
 
 const readOnly = new Compartment();
 
-function readWriteEditor(parent, update) {
-    return new EditorView({
-        state: EditorState.create({
-            doc: '',
+function getText(state) {
+    return state.doc.toString();
+}
+
+class SpiritEditor extends EventTarget {
+    constructor(code, disp, extern) {
+        super();
+        this.code = code;
+        this.disp = disp;
+        this.extern = extern;
+        this.emit = false;
+        this.readonly = true;
+        this.edit = new EditorView({
+            state: this.createState(''),
+            parent: code,
+        });
+    }
+
+    createState(doc) {
+        return EditorState.create({
+            doc: doc,
             extensions: [
                 minimalSetup,
                 lineNumbers(),
@@ -28,39 +45,14 @@ function readWriteEditor(parent, update) {
                     ...historyKeymap,
                 ]),
                 EditorView.lineWrapping,
-                EditorView.updateListener.of(update),
+                EditorView.updateListener.of(upd => {
+                    if (this.emit && upd.docChanged) {
+                        this.sendUpdate(upd);
+                    }
+                }),
                 readOnly.of(EditorState.readOnly.of(true))
             ],
-        }),
-        parent: parent,
-    });
-}
-
-function getText(state) {
-    return state.doc.toString();
-}
-
-function setText(editor, text) {
-    let len = editor.state.doc.length;
-    let upd = editor.state.update({
-        changes: {from: 0, to: len, insert: text}
-    });
-    editor.dispatch(upd);
-}
-
-class SpiritEditor extends EventTarget {
-    constructor(code, disp, extern) {
-        super();
-        this.code = code;
-        this.disp = disp;
-        this.extern = extern;
-        this.emit = false;
-        this.readonly = true;
-        this.edit = readWriteEditor(code, upd => {
-            if (this.emit && upd.docChanged) {
-                this.sendUpdate(upd);
-            }
-        });
+        })
     }
 
     loadDocument(src) {
@@ -82,6 +74,12 @@ class SpiritEditor extends EventTarget {
         );
     }
 
+    submitUpdate(upd) {
+        if (this.emit && upd.docChanged) {
+            this.sendUpdate(upd);
+        }
+    }
+
     applyUpdate(chg) {
         let upd = this.edit.state.update({changes: chg});
         this.edit.dispatch(upd);
@@ -99,7 +97,7 @@ class SpiritEditor extends EventTarget {
     }
 
     setCode(src) {
-        setText(this.edit, src);
+        this.edit.setState(this.createState(src));
     }
 
     async setDisp(src) {

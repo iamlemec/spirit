@@ -134,6 +134,14 @@ class External {
         }
     }
 
+    async search(query) {
+        let resp = await fetch(`/search/${query}`);
+        if (resp.ok) {
+            let data = await resp.json();
+            return data;
+        }
+    }
+
     invalidate() {
         this.imgs.clear();
         this.refs.clear();
@@ -158,27 +166,15 @@ function initSpirit(doc) {
     let extern = doc ? new External() : null;
     let editor = new SpiritEditor(left, right, extern);
 
-    // make search interface
-    let search_element = document.querySelector('#search');
-    let search = new SpiritSearch(search_element);
-
-    // toggle search mode
-    document.addEventListener('keydown', evt => {
-        if (evt.key == 'F1') {
-            console.log('search');
-            search.toggle();
-            if (!search_element.classList.contains('active')) {
-                editor.edit.focus();
-            }
-            return false;
-        }
-    });
-
     // server or no-server mode
     if (doc) {
         // connect with server
         const port = 8000;
         let connect = new Connection(`ws://${location.hostname}:${port}`);
+
+        // make search interface
+        let search_element = document.querySelector('#search');
+        let search = new SpiritSearch(search_element, extern);
 
         // connect update event
         editor.addEventListener('update', evt => {
@@ -187,9 +183,8 @@ function initSpirit(doc) {
 
         // connect refresh event
         document.addEventListener('keydown', evt => {
-            let key = evt.key.toLowerCase();
             if (!editor.readonly) {
-                if (evt.key == 'f5') {
+                if (evt.key == 'F5') {
                     console.log('reindexing');
                     connect.reloadIndex();
                     extern.invalidate();
@@ -199,6 +194,13 @@ function initSpirit(doc) {
                     connect.saveDocument(doc);
                     evt.preventDefault();
                 }
+            }
+            if (evt.key == 'F1') {
+                console.log('search');
+                if (!search.toggle()) {
+                    editor.edit.focus();
+                }
+                return false;
             }
         });
 

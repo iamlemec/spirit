@@ -58,7 +58,7 @@ async function parseCites(cit) {
 
 // document index store
 class Index {
-    constructor(docs) {
+    constructor() {
         this.refs = new Map();
         this.pops = new Map();
         this.cits = new Map();
@@ -111,6 +111,16 @@ class Index {
                 this.pops.delete(k);
             }
         }
+    }
+
+    search(query) {
+        let results = [];
+        for (let [k, v] of this.refs) {
+            if (k.includes(query)) {
+                results.push(k);
+            }
+        }
+        return results;
     }
 }
 
