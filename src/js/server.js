@@ -8,8 +8,8 @@ import { WebSocketServer } from 'ws'
 import { ChangeSet, Text } from '@codemirror/state'
 
 import { indexAll } from './index.js'
-import { Multimap } from './utils.js';
-import { exportHtml, exportLatex } from './export.js';
+import { Multimap } from './utils.js'
+import { exportHtml, exportLatex } from './export.js'
 
 export { serveSpirit }
 

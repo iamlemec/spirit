@@ -7,6 +7,9 @@ import { markdown } from '../node_modules/@codemirror/lang-markdown/dist/index.j
 import { minimalSetup } from '../node_modules/codemirror/dist/index.js';
 import { parseDocument, Context } from './markum.js';
 
+// spirit editor
+
+
 const readOnly = new Compartment();
 
 function readWriteEditor(parent, update) {

@@ -1,3 +1,5 @@
+// spirit editor
+
 import { EditorView, keymap, lineNumbers } from '@codemirror/view'
 import { EditorState, Compartment } from '@codemirror/state'
 import { defaultKeymap, indentWithTab, historyKeymap } from '@codemirror/commands'

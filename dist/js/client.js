@@ -1,7 +1,8 @@
 import { enableResize, SpiritEditor, setCookie, downloadFile, getCookie } from './editor.js';
+import { SpiritSearch } from './search.js';
 import { ChangeSet } from '../node_modules/@codemirror/state/dist/index.js';
 
-// spirit editor
+// spirit client
 
 
 class Connection extends EventTarget {
@@ -152,12 +153,28 @@ function initSpirit(doc) {
     let pdf = document.querySelector('#pdf-button');
     enableResize(left, right, mid);
 
+    // gets created either way
+    let extern = doc ? new External() : null;
+    let editor = new SpiritEditor(left, right, extern);
+
+    // make search interface
+    let search_element = document.querySelector('#search');
+    let search = new SpiritSearch(search_element);
+
+    // toggle search mode
+    document.addEventListener('keydown', evt => {
+        if (evt.key == 'F1') {
+            console.log('search');
+            search.toggle();
+            if (!search_element.classList.contains('active')) {
+                editor.edit.focus();
+            }
+            return false;
+        }
+    });
+
     // server or no-server mode
     if (doc) {
-        // make connected editor
-        let extern = new External();
-        let editor = new SpiritEditor(left, right, extern);
-
         // connect with server
         const port = 8000;
         let connect = new Connection(`ws://${location.hostname}:${port}`);
@@ -168,20 +185,21 @@ function initSpirit(doc) {
         });
 
         // connect refresh event
-        document.onkeydown = evt => {
+        document.addEventListener('keydown', evt => {
+            evt.key.toLowerCase();
             if (!editor.readonly) {
-                if (evt.key == 'F5') {
+                if (evt.key == 'f5') {
                     console.log('reindexing');
                     connect.reloadIndex();
                     extern.invalidate();
-                    return false;
+                    evt.preventDefault();
                 } else if (evt.ctrlKey && evt.key == 's') {
                     console.log('saving');
                     connect.saveDocument(doc);
-                    return false;
+                    evt.preventDefault();
                 }
             }
-        };
+        });
 
         // connect load event
         connect.addEventListener('load', evt => {
@@ -217,9 +235,6 @@ function initSpirit(doc) {
             window.location = `/pdf/${doc}`;
         });
     } else {
-        // make bare bones editor
-        let editor = new SpiritEditor(left, right, null);
-
         // connect cookie storage
         editor.addEventListener('update', evt => {
             let { text } = evt.detail;

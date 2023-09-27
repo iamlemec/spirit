@@ -5,6 +5,13 @@ import rename from 'gulp-rename'
 import { spawn } from 'child_process';
 import { create } from 'browser-sync';
 
+// parse arguments
+let args = process.argv.slice(3);
+
+/*
+** Build
+*/
+
 // store values globally
 let cache = {};
 
@@ -34,7 +41,7 @@ gulp.task('js', () => {
 });
 
 // spirit css
-gulp.task('css', () => gulp.src(['./src/css/markum.css', './src/css/editor.css'])
+gulp.task('css', () => gulp.src(['./src/css/*'])
     .pipe(gulp.dest('./dist/css'))
 );
 
@@ -77,6 +84,10 @@ gulp.task('images', () => gulp.src(['./src/img/*'])
 // spirit all
 gulp.task('build', gulp.parallel('js', 'css', 'fonts', 'images'));
 
+/*
+** Basic develop
+*/
+
 // spirit watch
 gulp.task('watch', () => {
     gulp.watch(['src/js/*'], gulp.series('js'));
@@ -84,64 +95,77 @@ gulp.task('watch', () => {
     gulp.watch(['src/img/*'], gulp.series('images'));
 });
 
-// spirit devel mode
+// basic devel mode
 gulp.task('devel', gulp.series(['build', 'watch']));
 
-// spirit (re)spawn server
+/*
+** Respawn
+*/
+
+// respawn server
 let server = null;
-let browserSync = null;
-gulp.task('server-respawn-reload', function(done) {
+function respawnServer() {
     if (server != null) {
         server.kill();
     }
     server = spawn(
-        'node', ['src/js/console.js', 'serve'], {stdio: 'inherit'}
+        'node', ['src/js/console.js', 'serve', ...args], {stdio: 'inherit'}
     );
-    browserSync.reload();
-    done();
-});
+}
 
-// spirit watch respawn
-gulp.task('watch-respawn-reload', function() {
-    gulp.watch(['src/js/*'], gulp.series(['js', 'server-respawn-reload']));
-    gulp.watch(['src/css/*'], gulp.series('css'));
-    gulp.watch(['src/img/*'], gulp.series('images'));
-});
-
-
-gulp.task('browser-sync-init', function(done) {
+// init browser-sync
+let browserSync = null;
+function browserInit() {
     browserSync = create();
     browserSync.init({
         proxy: "localhost:8000",
         reloadDelay: 500,
     });
-    done();
-});
+}
 
-// spirit serve
-gulp.task('serve-devel', gulp.series([
-    'build', 'browser-sync-init', gulp.parallel(['server-respawn-reload', 'watch-respawn-reload'])
-]));
-
-// basic spawn
+// respawn server
 gulp.task('server-respawn', function(done) {
-    if (server != null) {
-        server.kill();
-    }
-    server = spawn(
-        'node', ['src/js/console.js', 'serve'], {stdio: 'inherit'}
-    );
+    respawnServer();
     done();
 });
 
+// watch respawn
 gulp.task('watch-respawn', function() {
     gulp.watch(['src/js/*'], gulp.series(['js', 'server-respawn']));
     gulp.watch(['src/css/*'], gulp.series('css'));
     gulp.watch(['src/img/*'], gulp.series('images'));
 });
 
-// basic serve
-gulp.task('serve', gulp.series([
+// serve respawn
+gulp.task('serve-respawn', gulp.series([
     'build', gulp.parallel(['server-respawn', 'watch-respawn'])
 ]));
 
+/*
+** Respawn + reload
+*/
+
+// init browser-sync
+gulp.task('browser-init', function(done) {
+    browserInit();
+    done();
+});
+
+// respawn server + reload
+gulp.task('server-reload', function(done) {
+    respawnServer();
+    browserSync.reload();
+    done();
+});
+
+// watch respawn + reload
+gulp.task('watch-reload', function() {
+    gulp.watch(['src/js/*'], gulp.series(['js', 'server-reload']));
+    gulp.watch(['src/css/*'], gulp.series('css'));
+    gulp.watch(['src/img/*'], gulp.series('images'));
+});
+
+// serve respawn + reload
+gulp.task('serve-reload', gulp.series([
+    'build', 'browser-init', gulp.parallel(['server-reload', 'watch-reload'])
+]));
