@@ -60,6 +60,23 @@ function ensureArray(x) {
 }
 
 /**
+ * High-level render
+ */
+
+async function renderMarkdown(src, extern) {
+    let html;
+    try {
+        let tree = parseDocument(src);
+        let ctx = new Context(extern);
+        await tree.refs(ctx);
+        html = await tree.html(ctx);
+    } catch (e) {
+        html = new ErrorMessage(e);
+    }
+    return html;
+}
+
+/**
  * Block Regex
  */
 
@@ -318,7 +335,7 @@ function parseBlock(src) {
         let {id, caption, title, ...args} = parseArgs(rargs);
         caption = parseInline(caption);
         let body = src.slice(mat.length);
-        let child, ftype = 'figure';
+        let child, ftype = 'figure', hidden = false;
         if (tag == 'fig') {
             let children = parseInline(body);
             child = new Div(children);
@@ -338,10 +355,17 @@ function parseBlock(src) {
             child = new Svg(body, args);
         } else if (tag == 'gum') {
             child = new Gum(body, args);
+        } else if (tag == 'lib') {
+            child = new GumLib(body);
+            hidden = true;
         } else if (tag == 'code') {
             child = new Code(body, args);
         }
-        return new Figure(child, {ftype, id, caption, title, number});
+        if (hidden) {
+            return child;
+        } else {
+            return new Figure(child, {ftype, id, caption, title, number});
+        }
     }
 
     // comment
@@ -814,35 +838,33 @@ class Document extends Container {
  * gum.js and katex bridges
  */
 
-// this will return an Element or String
 // contingent upon the idiotic number of possible return types
-class GumWrap extends Element {
-    constructor(code, args) {
-        let {pixel} = args ?? {};
-        super('svg', false); // this is overridden
-        try {
-            this.gum = parseGum(code);
-            if (this.gum instanceof SVG) {
-            } else if (this.gum instanceof Element$1) {
-                this.gum = new SVG(this.gum, {pixel});
-            }
-        } catch (err) {
-            this.gum = new Span(err.message, {class: 'gum-error'});
+function renderGum(code, args) {
+    let {pixel} = args ?? {};
+
+    // parse into gum tree
+    let gum;
+    try {
+        gum = parseGum(code);
+        if (gum instanceof SVG) {
+        } else if (gum instanceof Element$1) {
+            gum = new SVG(gum, {pixel});
         }
+    } catch (err) {
+        gum = new Span(err.message, {class: 'gum-error'});
     }
 
-    html(ctx) {
-        if (this.gum instanceof Element$1) {
-            try {
-                return this.gum.svg();
-            } catch (err) {
-                return `<span class="gum-error">${err.message}</div>`;
-            }    
-        } else if (this.gum instanceof Element) {
-            return this.gum.html();
-        } else {
-            return this.gum;
-        }
+    // render gum tree
+    if (gum instanceof Element$1) {
+        try {
+            return gum.svg();
+        } catch (err) {
+            return `<span class="gum-error">${err.message}</div>`;
+        }    
+    } else if (gum instanceof Element) {
+        return gum.html();
+    } else {
+        return gum;
     }
 }
 
@@ -1331,13 +1353,30 @@ class Svg extends Div {
     }
 }
 
-class Gum extends Div {
+class Gum extends Element {
     constructor(code, args) {
         let {number, width, pixel, ...attr} = args ?? {};
         width = width ?? 65;
-        let gum = new GumWrap(code, {pixel});
         let attr1 = mergeAttr(attr, {class: 'gum', style: `width: ${width}%`});
-        super(gum, attr1);
+        super('div', false, attr1); // this is overridden
+        this.code = code;
+    }
+
+    async inner(ctx) {
+        let args = {pixel: this.pixel};
+        let code = (ctx.lib ?? '') + '\n' + this.code;
+        return renderGum(code, args);
+    }
+}
+
+class GumLib extends Comment {
+    constructor(code) {
+        super(`gum.js headers`, {class: 'gum-lib'});
+        this.code = code;
+    }
+
+    refs(ctx) {
+        ctx.lib = (ctx.lib ?? '') + '\n' + this.code;
     }
 }
 
@@ -1390,4 +1429,4 @@ class EnvEnd extends Container {
     }
 }
 
-export { Context, incrementCounter, parseBlock, parseDocument, parseInline };
+export { Context, incrementCounter, parseBlock, parseDocument, parseInline, renderMarkdown };
