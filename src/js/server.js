@@ -245,7 +245,7 @@ class ClientRouter {
 }
 
 // main entry point
-async function serveSpirit(store, ip, port) {
+async function serveSpirit(store, host, port) {
     // create server objects
     const app = express();
     const server = createServer(app);
@@ -400,6 +400,6 @@ async function serveSpirit(store, ip, port) {
     });
 
     // start http server
-    console.log(`serving on: http://${ip}:${port}`);
-    server.listen(port, ip);
+    console.log(`serving on: http://${host}:${port}`);
+    server.listen(port, host);
 }

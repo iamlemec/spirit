@@ -4,9 +4,18 @@ import gulp from 'gulp'
 import rename from 'gulp-rename'
 import { spawn } from 'child_process';
 import { create } from 'browser-sync';
+import { parseArgs } from 'node:util';
 
 // parse arguments
-let args = process.argv.slice(3);
+const {
+    values: { host, port },
+} = parseArgs({
+    args: process.argv.slice(3),
+    options: {
+        host: { type: 'string', default: 'localhost' },
+        port: { type: 'string', default: '8000'},
+    },
+});
 
 /*
 ** Build
@@ -108,6 +117,7 @@ function respawnServer() {
     if (server != null) {
         server.kill();
     }
+    let args = [`--host=${host}`, `--port=${port}`];
     server = spawn(
         'node', ['src/js/console.js', 'serve', ...args], {stdio: 'inherit'}
     );
@@ -118,8 +128,9 @@ let browserSync = null;
 function browserInit() {
     browserSync = create();
     browserSync.init({
-        proxy: "localhost:8000",
+        proxy: `${host}:${port}`,
         reloadDelay: 500,
+        ws: true,
     });
 }
 
@@ -151,21 +162,26 @@ gulp.task('browser-init', function(done) {
     done();
 });
 
+gulp.task('browser-reload', function(done) {
+    browserSync.reload();
+    done();
+});
+
 // respawn server + reload
-gulp.task('server-reload', function(done) {
+gulp.task('server-respawn-reload', function(done) {
     respawnServer();
     browserSync.reload();
     done();
 });
 
 // watch respawn + reload
-gulp.task('watch-reload', function() {
-    gulp.watch(['src/js/*'], gulp.series(['js', 'server-reload']));
-    gulp.watch(['src/css/*'], gulp.series('css'));
+gulp.task('watch-respawn-reload', function() {
+    gulp.watch(['src/js/*'], gulp.series(['js', 'server-respawn-reload']));
+    gulp.watch(['src/css/*'], gulp.series(['css', 'browser-reload']));
     gulp.watch(['src/img/*'], gulp.series('images'));
 });
 
 // serve respawn + reload
-gulp.task('serve-reload', gulp.series([
-    'build', 'browser-init', gulp.parallel(['server-reload', 'watch-reload'])
+gulp.task('serve-respawn-reload', gulp.series([
+    'build', 'browser-init', gulp.parallel(['server-respawn-reload', 'watch-respawn-reload'])
 ]));

@@ -9,7 +9,7 @@
     "build": "npx gulp build",
     "devel": "npx gulp devel",
     "serve-respawn": "npx gulp serve-respawn",
-    "serve-reload": "npx gulp serve-reload"
+    "serve-respawn-reload": "npx gulp serve-respawn-reload"
   },
   "dependencies": {
     "@codemirror/commands": "^6.2.4",

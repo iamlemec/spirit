@@ -52,10 +52,10 @@ program.command('export')
 program.command('serve')
     .description('Run Spirit server')
     .option('-s, --store <store>', 'Document storage path', './store')
-    .option('-i, --ip <ip>', 'IP address to serve on', 'localhost')
+    .option('-h, --host <host>', 'IP address to serve on', 'localhost')
     .option('-p, --port <port>', 'Port to serve on', 8000)
     .action(async (opts) => {
-        await serveSpirit(opts.store, opts.ip, opts.port);
+        await serveSpirit(opts.store, opts.host, opts.port);
     });
 
 // execute program

@@ -168,8 +168,7 @@ function initSpirit(doc) {
     // server or no-server mode
     if (doc) {
         // connect with server
-        const port = 8000;
-        let connect = new Connection(`ws://${location.hostname}:${port}`);
+        let connect = new Connection(`ws://${location.hostname}:${location.port}`);
 
         // make search interface
         let search_element = document.querySelector('#search');

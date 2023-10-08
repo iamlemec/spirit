@@ -102,6 +102,7 @@ class SpiritEditor extends EventTarget {
     async setDisp(src) {
         let html = await renderMarkdown(src, this.extern);
         this.disp.innerHTML = html;
+        positionPopups(this.disp);
     }
 }
 
@@ -120,6 +121,38 @@ function getCookie(key) {
 function setCookie(key, val) {
     let enc = encodeURIComponent(val);
     document.cookie = `${key}=${enc}; SameSite=Lax`;
+}
+
+// adjust popup positions
+function positionPopups(elem) {
+    let poppers = elem.querySelectorAll('.popper');
+    for (let popper of poppers) {
+        let ref = popper.querySelector('.reference');
+        let pop = popper.querySelector('.popup');
+        ref.addEventListener('mouseenter', evt => {
+            let rrect = ref.getBoundingClientRect();
+            let prect = pop.getBoundingClientRect();
+            let wrect = elem.getBoundingClientRect();
+
+            // get reference center
+            let x_ref = rrect.x + rrect.width / 2;
+            let y_ref = rrect.y + rrect.height / 2;
+            let xl_pop = x_ref - prect.width / 2;
+            let xr_pop = x_ref + prect.width / 2;
+            let xt_pop = y_ref - prect.height - 15;
+
+            // get horizontal overflow
+            let xl_shift = Math.max(0, xr_pop - wrect.right + 20);
+            let xr_shift = Math.max(0, wrect.left - xl_pop + 20);
+
+            // implement shifters
+            let x_shift = `calc(-50% - ${xl_shift-xr_shift}px)`;
+            let y_shift = (xt_pop < wrect.top) ? '15px' : 'calc(-100% - 15px)';
+
+            // set transform style
+            pop.style.transform = `translate(${x_shift}, ${y_shift})`;
+        });
+    }
 }
 
 // resize panels
