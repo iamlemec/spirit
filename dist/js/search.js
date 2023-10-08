@@ -28,14 +28,31 @@ class SpiritSearch extends EventTarget {
                 return;
             }
             this.sender = setTimeout(async () => {
-                let query = this.query.textContent;
-                console.log(`query: ${query}`);
-                let resp = await this.extern.search(query);
-                console.log(`response: ${resp}`);
-                this.populateResults(resp);
+                let text = this.getQuery();
+                this.runQuery(text);
                 this.sender = null;
             }, 250);
         }, {passive: true});
+
+        // prevent newline
+        this.query.addEventListener('keydown', evt => {
+            if (evt.key == 'Enter') {
+                let doc = this.getDocument();
+                if (doc != null) {
+                    this.dispatchEvent(
+                        new CustomEvent('open', {detail: doc})
+                    );
+                    this.hide();
+                }
+                evt.preventDefault();
+            } else if (evt.key == 'Escape') {
+                this.hide();
+            } else if (evt.key == 'ArrowDown') {
+                this.moveDown();
+            } else if (evt.key == 'ArrowUp') {
+                this.moveUp();
+            }
+        });
 
         // state
         this.active = false;
@@ -57,6 +74,10 @@ class SpiritSearch extends EventTarget {
         // visual
         this.search.classList.add('active');
         placeCaretAtEnd(this.query);
+
+        // query
+        let text = this.getQuery();
+        this.runQuery(text);
     }
 
     hide() {
@@ -66,13 +87,77 @@ class SpiritSearch extends EventTarget {
         this.search.classList.remove('active');
     }
 
+    getQuery() {
+        return this.query.textContent;
+    }
+
+    async runQuery(text) {
+        let resp = await this.extern.search(text);
+        this.populateResults(resp);
+    }
+
     populateResults(results) {
         this.results.innerHTML = '';
-        for (let text of results) {
+        for (let [doc, title] of results) {
             let line = document.createElement('div');
             line.classList.add('result-line');
-            line.textContent = text;
+
+            let dtag = document.createElement('span');
+            dtag.classList.add('result-doc');
+            dtag.textContent = doc;
+
+            let ttag = document.createElement('span');
+            ttag.classList.add('result-title');
+            ttag.textContent = title;
+
+            line.appendChild(ttag);
+            line.appendChild(dtag);
             this.results.appendChild(line);
+        }
+        let first = this.results.querySelector('.result-line');
+        if (first) {
+            first.classList.add('selected');
+        }
+    }
+
+    getSelected() {
+        return this.results.querySelector('.result-line.selected');
+    }
+
+    getDocument() {
+        let curr = this.getSelected();
+        if (curr) {
+            let item = curr.querySelector('.result-doc');
+            let doc = item.textContent;
+            return doc;
+        }
+        return null;
+    }
+
+    moveDown() {
+        let curr = this.getSelected();
+        if (curr) {
+            let next = curr.nextElementSibling;
+            if (next) {
+                curr.classList.remove('selected');
+                next.classList.add('selected');
+            }
+        } else {
+            let first = this.results.querySelector('.result-line');
+            if (first) {
+                first.classList.add('selected');
+            }
+        }
+    }
+
+    moveUp() {
+        let curr = this.getSelected();
+        if (curr) {
+            let prev = curr.previousElementSibling;
+            if (prev) {
+                curr.classList.remove('selected');
+                prev.classList.add('selected');
+            }
         }
     }
 }

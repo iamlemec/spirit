@@ -168,11 +168,19 @@ function initSpirit(doc) {
     // server or no-server mode
     if (doc) {
         // connect with server
-        let connect = new Connection(`ws://${location.hostname}:${location.port}`);
+        let [host, port] = [location.hostname, location.port];
+        let connect = new Connection(`ws://${host}:${port}`);
 
         // make search interface
         let search_element = document.querySelector('#search');
         let search = new SpiritSearch(search_element, extern);
+
+        // connect load event
+        search.addEventListener('open', evt => {
+            let doc = evt.detail;
+            history.replaceState({}, null, `?doc=${doc}`);
+            connect.loadDocument(doc);
+        });
 
         // connect update event
         editor.addEventListener('update', evt => {

@@ -1,5 +1,6 @@
 :root {
     --search-border-color: #888;
+    --neon-blue: #1F6FE7;
 }
 
 #search {
@@ -25,6 +26,7 @@
     background-color: white;
     opacity: unset;
     border-radius: 5px;
+    font-family: sans-serif;
 }
 
 #search-bar {
@@ -32,7 +34,7 @@
     height: 25px;
     padding: 15px;
     border-bottom: 1px solid var(--search-border-color);
-    background-color: #EEE;
+    background-color: #DDD;
     border-radius: 5px 5px 0 0;
 }
 
@@ -41,11 +43,26 @@
     border: 0;
     font-size: 20px;
     color: black;
-    font-family: sans-serif;
 }
 
 [contenteditable] {
     outline: none;
+}
+
+#search-create {
+    position: absolute;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    top: 17.5px;
+    right: 17.5px;
+    width: 20px;
+    height: 20px;
+    color: white;
+    background-color: var(--neon-blue);
+    border-radius: 2px;
+    cursor: default;
+    opacity: 0.85;
 }
 
 #search-results {
@@ -58,6 +75,20 @@
 }
 
 .result-line {
+    display: flex;
+    gap: 10px;
     border-bottom: 1px solid #DDD;
     padding: 15px;
+}
+
+.result-doc {
+    color: white;
+    background-color: var(--neon-blue);
+    opacity: 0.75;
+    padding: 0px 2px;
+    border-radius: 2px;
+}
+
+.result-line.selected {
+    background-color: #EEE;
 }

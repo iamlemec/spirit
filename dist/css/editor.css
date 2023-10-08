@@ -17,11 +17,11 @@ body {
 
 #left {
     position: relative;
-    width: 55%;
+    width: 50%;
 }
 
 #right {
-    width: 45%;
+    width: 50%;
     background-color: #EEE;
     overflow-y: scroll;
     overflow-x: hidden;

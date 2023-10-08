@@ -312,6 +312,14 @@ async function serveSpirit(store, host, port) {
         res.sendFile('index.html', { root: '.' });
     });
 
+    // connect serve search
+    app.get('/search/:query?', (req, res) => {
+        let query = req.params.query ?? '';
+        console.log(`GET: /search/${query}`);
+        let results = index.search(query);
+        res.json(results);
+    });
+
     // connect serve document
     app.get('/:doc', (req, res) => {
         let doc = req.params.doc;
@@ -389,14 +397,6 @@ async function serveSpirit(store, host, port) {
         } else {
             res.sendStatus(404);
         }
-    });
-
-    // connect serve search
-    app.get('/search/:query', (req, res) => {
-        let query = req.params.query;
-        console.log(`GET: /search/${query}`);
-        let results = index.search(query);
-        res.json(results);
     });
 
     // start http server

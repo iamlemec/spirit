@@ -59,6 +59,7 @@ async function parseCites(cit) {
 // document index store
 class Index {
     constructor() {
+        this.docs = new Map();
         this.refs = new Map();
         this.pops = new Map();
         this.cits = new Map();
@@ -70,9 +71,15 @@ class Index {
             return;
         }
 
+        // extract info
         let {title, blurb, refs, pops} = info;
+
+        // add in title info
+        this.docs.set(doc, title);
         this.refs.set(doc, title);
         this.pops.set(doc, blurb);
+
+        // add in refs and pops
         for (let [k, v] of refs) {
             this.refs.set(`${doc}:${k}`, `${title}: ${v}`);
         }
@@ -114,10 +121,12 @@ class Index {
     }
 
     search(query) {
+        query = query.toLowerCase();
         let results = [];
-        for (let [k, v] of this.refs) {
-            if (k.includes(query)) {
-                results.push(k);
+        for (let [k, v] of this.docs) {
+            let [k1, v1] = [k.toLowerCase(), v.toLowerCase()];
+            if (k1.includes(query) || v1.includes(query)) {
+                results.push([k, v]);
             }
         }
         return results;
@@ -136,6 +145,7 @@ async function indexAll() {
     let index = new Index();
     await index.indexDocs(txts);
     await index.indexCites(cits);
+    console.log(index.docs);
 
     return index;
 }
