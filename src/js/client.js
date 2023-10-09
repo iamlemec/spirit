@@ -25,7 +25,12 @@ class Connection extends EventTarget {
             let {cmd, doc, data} = JSON.parse(evt.data);
             if (cmd == 'load') {
                 this.dispatchEvent(
-                    new CustomEvent('load', {detail: data})
+                    new CustomEvent('load', {detail: {doc, text: data}})
+                );
+            } else if (cmd == 'flash') {
+                console.log(`flash: ${data}`);
+                this.dispatchEvent(
+                    new CustomEvent('flash', {detail: data})
                 );
             } else if (cmd == 'readonly') {
                 this.dispatchEvent(
@@ -48,17 +53,23 @@ class Connection extends EventTarget {
         }));
     }
 
-    sendUpdates(doc, upd) {
+    sendUpdates(upd) {
         if (this.ws.readyState) {
             this.ws.send(JSON.stringify({
-                cmd: 'update', doc, data: upd.changes.toJSON()
+                cmd: 'update', data: upd.changes.toJSON()
             }));
         }
     }
 
-    saveDocument(doc) {
+    saveDocument() {
         this.ws.send(JSON.stringify({
-            cmd: 'save', doc
+            cmd: 'save'
+        }));
+    }
+
+    createDocument(doc) {
+        this.ws.send(JSON.stringify({
+            cmd: 'create', doc
         }));
     }
 
@@ -150,6 +161,10 @@ class External {
     }
 }
 
+function setDocument(doc) {
+    history.replaceState({}, null, `?doc=${doc}`);
+}
+
 function initSpirit(doc) {
     console.log(`initSpirit: ${doc}`);
 
@@ -163,7 +178,7 @@ function initSpirit(doc) {
     enableResize(left, right, mid);
 
     // gets created either way
-    let extern = doc ? new External() : null;
+    let extern = new External();
     let editor = new SpiritEditor(left, right, extern);
 
     // connect with server
@@ -176,14 +191,20 @@ function initSpirit(doc) {
 
     // connect load event
     search.addEventListener('open', evt => {
-        let doc = evt.detail;
-        history.replaceState({}, null, `?doc=${doc}`);
-        connect.loadDocument(doc);
+        let doc1 = evt.detail;
+        connect.loadDocument(doc1);
+    });
+
+    // connect create event
+    search.addEventListener('create', evt => {
+        let text = evt.detail;
+        connect.createDocument(text);
     });
 
     // connect update event
     editor.addEventListener('update', evt => {
-        connect.sendUpdates(doc, evt.detail);
+        let chg = evt.detail;
+        connect.sendUpdates(chg);
     });
 
     // connect refresh event
@@ -196,7 +217,7 @@ function initSpirit(doc) {
                 evt.preventDefault();
             } else if (evt.ctrlKey && evt.key == 's') {
                 console.log('saving');
-                connect.saveDocument(doc);
+                connect.saveDocument();
                 evt.preventDefault();
             }
         }
@@ -211,7 +232,8 @@ function initSpirit(doc) {
 
     // connect load event
     connect.addEventListener('load', evt => {
-        let text = evt.detail;
+        let {doc, text} = evt.detail;
+        setDocument(doc);
         editor.loadDocument(text);
     });
 

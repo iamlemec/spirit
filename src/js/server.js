@@ -33,15 +33,21 @@ function splitExtension(fname) {
 
 // load text file
 function loadFile(fpath) {
-    let text = '';
-    try {
-        text = fs.readFileSync(fpath, 'utf8');
-        console.log(`loading file: ${fpath}`);
-    } catch (err) {
-        console.log(`creating file: ${fpath}`);
-        fs.createFile(fpath);
+    if (fs.existsSync(fpath)) {
+        return fs.readFileSync(fpath, 'utf8');
+    } else {
+        return null;
     }
-    return text;
+}
+
+// create file
+function createFile(fpath) {
+    if (fs.existsSync(fpath)) {
+        return false;
+    } else {
+        fs.writeFileSync(fpath, '', 'utf8');
+        return true;
+    }
 }
 
 function sendExists(res, fpath) {
@@ -129,6 +135,10 @@ class ClientHandler extends EventTarget {
                 this.dispatchEvent(
                     new Event('save')
                 )
+            } else if (cmd == 'create') {
+                this.dispatchEvent(
+                    new CustomEvent('create', { detail: doc })
+                );
             } else {
                 console.log(`unknown command: ${cmd}`);
             }
@@ -143,9 +153,15 @@ class ClientHandler extends EventTarget {
         });
     }
 
-    load(text) {
+    load(doc, text) {
         this.ws.send(JSON.stringify({
-            cmd: 'load', data: text
+            cmd: 'load', doc, data: text
+        }));
+    }
+
+    flash(text) {
+        this.ws.send(JSON.stringify({
+            cmd: 'flash', data: text
         }));
     }
 
@@ -163,13 +179,23 @@ class ClientHandler extends EventTarget {
 }
 
 class ClientRouter {
-    constructor() {
+    constructor(store) {
+        this.store = store; // store path
         this.docs = new Map(); // document state for fpath
         this.clis = new Multimap(); // groups clients by fpath
         this.abrt = new Map(); // abort controller for client
     }
 
-    add(fpath, ch) {
+    // this is trusted: doesn't check for locality or existence
+    add(doc, ch) {
+        // get full path
+        let fpath = getLocalPath(this.store, doc);
+
+        // remove if already present
+        if (this.has(ch)) {
+            this.del(ch);
+        }
+
         // open document if needed
         if (!this.docs.has(fpath)) {
             this.docs.set(fpath, new DocumentHandler(fpath));
@@ -205,7 +231,7 @@ class ClientRouter {
 
         // send document to client
         let text = dh.text();
-        ch.load(text);
+        ch.load(doc, text);
 
         // set client to read-only
         let ro = this.clis.num(fpath) > 1;
@@ -256,7 +282,7 @@ async function serveSpirit(store, host, port) {
     console.log(`indexed ${index.refs.size} documents in ${store}`);
 
     // create client router
-    let router = new ClientRouter();
+    let router = new ClientRouter(store);
 
     // connect websocket
     wss.on('connection', ws => {
@@ -273,24 +299,19 @@ async function serveSpirit(store, host, port) {
             let fpath = getLocalPath(store, doc);
             if (fpath == null) {
                 console.log(`non-local path: ${doc}`);
-                ch.load(`document "${doc}" is non-local`);
+                ch.flash(`document "${doc}" is non-local`);
                 return;
             }
 
             // ensure path exists
             if (!fs.existsSync(fpath)) {
                 console.log(`non-existent path: ${fpath}`);
-                ch.load(`document "${doc}" not found`);
+                ch.flash(`document "${doc}" does not exist`);
                 return;
             }
 
-            // disconnect if already connected
-            if (router.has(ch)) {
-                router.del(ch);
-            }
-
             // connect client to document
-            router.add(fpath, ch);
+            router.add(doc, ch);
         });
 
         // remove client on close
@@ -301,6 +322,30 @@ async function serveSpirit(store, host, port) {
         // reindex on request
         ch.addEventListener('reindex', async () => {
             index = await indexAll(store);
+        });
+
+        // create document on request
+        ch.addEventListener('create', async evt => {
+            let doc = evt.detail;
+            console.log(`create: ${doc}`);
+
+            // ensure path is local
+            let fpath = getLocalPath(store, doc);
+            if (fpath == null) {
+                ch.flash(`path "${doc}" is non-local`);
+                return;
+            }
+
+            // ensure path does not exist
+            let created = createFile(fpath);
+            if (created) {
+                let text = `#! ${doc}\n`;
+                fs.writeFileSync(fpath, text, 'utf8');
+                index = await indexAll(store);
+                router.add(doc, ch);
+            } else {
+                ch.flash(`path "${doc}" already exists`);
+            }
         });
     });
 

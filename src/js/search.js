@@ -21,6 +21,7 @@ class SpiritSearch extends EventTarget {
         this.window = search.querySelector('#search-window');
         this.query = search.querySelector('#search-query');
         this.results = search.querySelector('#search-results');
+        this.create = search.querySelector('#search-create');
 
         // events
         this.sender = null;
@@ -53,6 +54,18 @@ class SpiritSearch extends EventTarget {
             } else if (evt.key == 'ArrowUp') {
                 this.moveUp();
             }
+        });
+
+        // create file
+        this.create.addEventListener('click', evt => {
+            let text = this.getQuery();
+            if (text.trim() == '') {
+                return;
+            }
+            this.dispatchEvent(
+                new CustomEvent('create', {detail: text})
+            );
+            this.hide();
         });
 
         // state
