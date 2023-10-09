@@ -9,7 +9,7 @@ import { markdown } from '@codemirror/lang-markdown'
 import { minimalSetup } from 'codemirror'
 import { renderMarkdown } from './markum.js'
 
-export { SpiritEditor, enableResize, getCookie, setCookie, downloadFile }
+export { SpiritEditor, enableResize }
 
 const readOnly = new Compartment();
 
@@ -107,23 +107,6 @@ class SpiritEditor extends EventTarget {
     }
 }
 
-// cookie tools
-function getCookie(key) {
-    let cookies = document.cookie.split(';').map(x => x.trim().split('='));
-    let cell = cookies.filter(([k, v]) => k == key).shift();
-    if (cell == null) {
-        return null;
-    } else {
-        let [_, val] = cell;
-        return decodeURIComponent(val);
-    }
-}
-
-function setCookie(key, val) {
-    let enc = encodeURIComponent(val);
-    document.cookie = `${key}=${enc}; SameSite=Lax`;
-}
-
 // adjust popup positions
 function positionPopups(elem) {
     let poppers = elem.querySelectorAll('.popper');
@@ -175,16 +158,4 @@ function enableResize(left, right, mid) {
     document.addEventListener('mouseup', evt => {
         document.removeEventListener('mousemove', resizePane, false);
     }, false);
-}
-
-// download named blob
-function downloadFile(name, blob) {
-    let url = URL.createObjectURL(blob);
-    let elem = document.createElement('a');
-    elem.setAttribute('href', url);
-    elem.setAttribute('download', `${name}`);
-    elem.style.display = 'none';
-    document.body.appendChild(elem);
-    elem.click();
-    document.body.removeChild(elem);
 }

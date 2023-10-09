@@ -1,4 +1,4 @@
-import { enableResize, SpiritEditor, setCookie, downloadFile, getCookie } from './editor.js';
+import { enableResize, SpiritEditor } from './editor.js';
 import { SpiritSearch } from './search.js';
 import { ChangeSet } from '../node_modules/@codemirror/state/dist/index.js';
 
@@ -165,103 +165,82 @@ function initSpirit(doc) {
     let extern = doc ? new External() : null;
     let editor = new SpiritEditor(left, right, extern);
 
-    // server or no-server mode
-    if (doc) {
-        // connect with server
-        let [host, port] = [location.hostname, location.port];
-        let connect = new Connection(`ws://${host}:${port}`);
+    // connect with server
+    let [host, port] = [location.hostname, location.port];
+    let connect = new Connection(`ws://${host}:${port}`);
 
-        // make search interface
-        let search_element = document.querySelector('#search');
-        let search = new SpiritSearch(search_element, extern);
+    // make search interface
+    let search_element = document.querySelector('#search');
+    let search = new SpiritSearch(search_element, extern);
 
-        // connect load event
-        search.addEventListener('open', evt => {
-            let doc = evt.detail;
-            history.replaceState({}, null, `?doc=${doc}`);
-            connect.loadDocument(doc);
-        });
+    // connect load event
+    search.addEventListener('open', evt => {
+        let doc = evt.detail;
+        history.replaceState({}, null, `?doc=${doc}`);
+        connect.loadDocument(doc);
+    });
 
-        // connect update event
-        editor.addEventListener('update', evt => {
-            connect.sendUpdates(doc, evt.detail);
-        });
+    // connect update event
+    editor.addEventListener('update', evt => {
+        connect.sendUpdates(doc, evt.detail);
+    });
 
-        // connect refresh event
-        document.addEventListener('keydown', evt => {
-            if (!editor.readonly) {
-                if (evt.key == 'F5') {
-                    console.log('reindexing');
-                    connect.reloadIndex();
-                    extern.invalidate();
-                    evt.preventDefault();
-                } else if (evt.ctrlKey && evt.key == 's') {
-                    console.log('saving');
-                    connect.saveDocument(doc);
-                    evt.preventDefault();
-                }
+    // connect refresh event
+    document.addEventListener('keydown', evt => {
+        if (!editor.readonly) {
+            if (evt.key == 'F5') {
+                console.log('reindexing');
+                connect.reloadIndex();
+                extern.invalidate();
+                evt.preventDefault();
+            } else if (evt.ctrlKey && evt.key == 's') {
+                console.log('saving');
+                connect.saveDocument(doc);
+                evt.preventDefault();
             }
-            if (evt.key == 'F1') {
-                console.log('search');
-                if (!search.toggle()) {
-                    editor.edit.focus();
-                }
-                return false;
+        }
+        if (evt.key == 'F1') {
+            console.log('search');
+            if (!search.toggle()) {
+                editor.edit.focus();
             }
-        });
+            return false;
+        }
+    });
 
-        // connect load event
-        connect.addEventListener('load', evt => {
-            let text = evt.detail;
-            editor.loadDocument(text);
-        });
-
-        // connect update event
-        connect.addEventListener('update', evt => {
-            let chg = evt.detail;
-            editor.applyUpdate(chg);
-        });
-
-        // connect readonly event
-        connect.addEventListener('readonly', evt => {
-            let ro = evt.detail;
-            editor.setReadOnly(ro);
-        });
-
-        // connect open event
-        connect.addEventListener('open', evt => {
-            connect.loadDocument(doc);
-        });
-
-        // connect button handlers
-        mdn.addEventListener('click', evt => {
-            window.location = `/md/${doc}`;
-        });
-        tex.addEventListener('click', evt => {
-            window.location = `/latex/${doc}`;
-        });
-        pdf.addEventListener('click', evt => {
-            window.location = `/pdf/${doc}`;
-        });
-    } else {
-        // connect cookie storage
-        editor.addEventListener('update', evt => {
-            let { text } = evt.detail;
-            setCookie('spirit', text);
-        });
-
-        // connect button handlers
-        mdn.addEventListener('click', evt => {
-            let text = editor.getCode();
-            let blob = new Blob([text], {type: 'text/markdown'});
-            downloadFile('document.md', blob);
-        });
-
-        // no server mode
-        let text = getCookie('spirit');
+    // connect load event
+    connect.addEventListener('load', evt => {
+        let text = evt.detail;
         editor.loadDocument(text);
-        editor.setReadOnly(false);
-    }
+    });
+
+    // connect update event
+    connect.addEventListener('update', evt => {
+        let chg = evt.detail;
+        editor.applyUpdate(chg);
+    });
+
+    // connect readonly event
+    connect.addEventListener('readonly', evt => {
+        let ro = evt.detail;
+        editor.setReadOnly(ro);
+    });
+
+    // connect open event
+    connect.addEventListener('open', evt => {
+        connect.loadDocument(doc);
+    });
+
+    // connect button handlers
+    mdn.addEventListener('click', evt => {
+        window.location = `/md/${doc}`;
+    });
+    tex.addEventListener('click', evt => {
+        window.location = `/latex/${doc}`;
+    });
+    pdf.addEventListener('click', evt => {
+        window.location = `/pdf/${doc}`;
+    });
 }
 
 export { initSpirit };

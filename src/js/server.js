@@ -305,11 +305,16 @@ async function serveSpirit(store, host, port) {
     });
 
     // set up static paths
-    app.use(express.static('.'));
+    app.use(express.static('dist'));
 
     // connect serve index
     app.get('/', (req, res) => {
-        res.sendFile('index.html', { root: '.' });
+        console.log('GET: /', req.query.doc);
+        if (req.query.doc == null) {
+            res.redirect('/?doc=spirit.md');
+        } else {
+            res.sendFile('index.html', { root: '.' });
+        }
     });
 
     // connect serve search
@@ -322,6 +327,7 @@ async function serveSpirit(store, host, port) {
 
     // connect serve document
     app.get('/:doc', (req, res) => {
+        console.log('GET: /doc?=', req.params.doc);
         let doc = req.params.doc;
         res.redirect(`/?doc=${doc}`);
     });
@@ -329,6 +335,7 @@ async function serveSpirit(store, host, port) {
     // connect serve text
     app.get('/md/:doc', (req, res) => {
         let doc = req.params.doc;
+        console.log(`GET: /md/${doc}`);
         let fpath = getLocalPath(store, doc);
         sendExists(res, fpath);
     });
@@ -336,6 +343,7 @@ async function serveSpirit(store, host, port) {
     // connect serve html
     app.get('/html/:doc', async (req, res) => {
         let doc = req.params.doc;
+        console.log(`GET: /html/${doc}`);
         let fpath = getLocalPath(store, doc);
         if (fpath != null) {
             let src = loadFile(fpath);
@@ -348,6 +356,7 @@ async function serveSpirit(store, host, port) {
     // connect serve html
     app.get('/latex/:doc', async (req, res) => {
         let doc = req.params.doc;
+        console.log(`GET: /latex/${doc}`);
         let [name, _] = splitExtension(doc);
         let fpath = getLocalPath(store, doc);
         if (fpath != null) {
@@ -362,6 +371,7 @@ async function serveSpirit(store, host, port) {
     // connect serve image
     app.get('/img/:img', (req, res) => {
         let img = req.params.img;
+        console.log(`GET: /img/${img}`);
         let fpath = getLocalPath(store, img);
         sendExists(res, fpath);
     });

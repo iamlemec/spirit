@@ -5,8 +5,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link rel="stylesheet" href="dist/css/markum.css" />
-<link rel="stylesheet" href="dist/css/editor.css" />
+<link rel="stylesheet" href="css/markum.css" />
+<link rel="stylesheet" href="css/editor.css" />
 
 <title>💖 Spirit</title>
 
@@ -23,21 +23,21 @@
 <div id="download-section">
 
 <svg width="20" height="20" id="download-button" class="icon">
-<use xlink:href="dist/img/icons.svg#download-icon"></use>
+<use xlink:href="img/icons.svg#download-icon"></use>
 </svg>
 
 <div id="download-popup">
 
 <svg width="20" height="20" id="pdf-button" class="icon">
-<use xlink:href="dist/img/icons.svg#pdf-icon"></use>
+<use xlink:href="img/icons.svg#pdf-icon"></use>
 </svg>
 
 <svg width="20" height="20" id="latex-button" class="icon">
-<use xlink:href="dist/img/icons.svg#latex-icon"></use>
+<use xlink:href="img/icons.svg#latex-icon"></use>
 </svg>
 
 <svg width="20" height="20" id="markdown-button" class="icon">
-<use xlink:href="dist/img/icons.svg#markdown-icon"></use>
+<use xlink:href="img/icons.svg#markdown-icon"></use>
 </svg>
 </div>
 
@@ -66,7 +66,7 @@
 </div>
         
 <script type="module">
-import { initSpirit } from './dist/js/client.js'
+import { initSpirit } from './js/client.js'
 let params = new URLSearchParams(window.location.search);
 let source = params.has('doc') ? params.get('doc') : null;
 initSpirit(source);
