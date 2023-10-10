@@ -189,25 +189,25 @@ function initSpirit(doc) {
     let search_element = document.querySelector('#search');
     let search = new SpiritSearch(search_element, extern);
 
-    // connect load event
+    // when search results in a document load request
     search.addEventListener('open', evt => {
         let doc1 = evt.detail;
         connect.loadDocument(doc1);
     });
 
-    // connect create event
+    // when search results in a document create request
     search.addEventListener('create', evt => {
         let text = evt.detail;
         connect.createDocument(text);
     });
 
-    // connect update event
+    // when our own editor registers a text update (to send to server)
     editor.addEventListener('update', evt => {
         let chg = evt.detail;
         connect.sendUpdates(chg);
     });
 
-    // connect refresh event
+    // user interface keybindings
     document.addEventListener('keydown', evt => {
         if (!editor.readonly) {
             if (evt.key == 'F5') {
@@ -230,31 +230,31 @@ function initSpirit(doc) {
         }
     });
 
-    // connect load event
+    // when receive a load new document command from the server
     connect.addEventListener('load', evt => {
         let {doc, text} = evt.detail;
         setDocument(doc);
         editor.loadDocument(text);
     });
 
-    // connect update event
+    // when we receive document updates from the server (from other clients)
     connect.addEventListener('update', evt => {
         let chg = evt.detail;
         editor.applyUpdate(chg);
     });
 
-    // connect readonly event
+    // when we are toggled readonly/editable by the server
     connect.addEventListener('readonly', evt => {
         let ro = evt.detail;
         editor.setReadOnly(ro);
     });
 
-    // connect open event
+    // when we establish the websocket connection
     connect.addEventListener('open', evt => {
         connect.loadDocument(doc);
     });
 
-    // connect button handlers
+    // connect export button handlers
     mdn.addEventListener('click', evt => {
         window.location = `/md/${doc}`;
     });

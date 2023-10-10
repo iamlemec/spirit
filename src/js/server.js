@@ -61,6 +61,14 @@ function sendExists(res, fpath) {
     }
 }
 
+function titleFromFilename(fname) {
+    let [name, _] = splitExtension(fname);
+    return name.split('_')
+               .filter(s => s.length > 0)
+               .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+               .join(' ');
+}
+
 class DocumentHandler extends EventTarget {
     constructor(fpath) {
         super();
@@ -291,7 +299,7 @@ async function serveSpirit(store, host, port) {
         // create client handler
         let ch = new ClientHandler(ws);
 
-        // real action happens on load
+        // the client is requesting a document
         ch.addEventListener('load', evt => {
             let doc = evt.detail;
 
@@ -310,21 +318,21 @@ async function serveSpirit(store, host, port) {
                 return;
             }
 
-            // connect client to document
+            // connect client to document (handles response)
             router.add(doc, ch);
         });
 
-        // remove client on close
+        // the client is disconnecting
         ch.addEventListener('close', () => {
             router.del(ch);
         });
 
-        // reindex on request
+        // the client is requesting a reindex
         ch.addEventListener('reindex', async () => {
             index = await indexAll(store);
         });
 
-        // create document on request
+        // the client is requesting a document creation
         ch.addEventListener('create', async evt => {
             let doc = evt.detail;
             console.log(`create: ${doc}`);
@@ -339,7 +347,8 @@ async function serveSpirit(store, host, port) {
             // ensure path does not exist
             let created = createFile(fpath);
             if (created) {
-                let text = `#! ${doc}\n`;
+                let title = titleFromFilename(doc);
+                let text = `#! ${title}\n`;
                 fs.writeFileSync(fpath, text, 'utf8');
                 index = await indexAll(store);
                 router.add(doc, ch);
