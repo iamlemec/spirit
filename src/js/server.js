@@ -130,6 +130,10 @@ class ClientHandler extends EventTarget {
                 this.dispatchEvent(
                     new CustomEvent('load', { detail: doc })
                 );
+            } else if (cmd == 'close') {
+                this.dispatchEvent(
+                    new Event('close')
+                );
             } else if (cmd == 'update') {
                 let chg = ChangeSet.fromJSON(data);
                 this.dispatchEvent(
@@ -227,6 +231,9 @@ class ClientRouter {
             } else {
                 console.log(`got "update" from non-leader`);
             }
+        }, { signal: control.signal });
+        ch.addEventListener('close', () => {
+            this.del(ch);
         }, { signal: control.signal });
         ch.addEventListener('save', () => {
             let first = this.clis.get(fpath).get(0);
@@ -364,11 +371,7 @@ async function serveSpirit(store, host, port) {
     // connect serve index
     app.get('/', (req, res) => {
         console.log('GET: /', req.query.doc);
-        if (req.query.doc == null) {
-            res.redirect('/?doc=spirit.md');
-        } else {
-            res.sendFile('index.html', { root: '.' });
-        }
+        res.sendFile('index.html', { root: '.' });
     });
 
     // connect serve search

@@ -24,7 +24,7 @@ class SpiritEditor extends EventTarget {
         this.disp = disp;
         this.extern = extern;
         this.emit = false;
-        this.readonly = true;
+        this.readonly = false;
         this.edit = new EditorView({
             state: this.createState(''),
             parent: code,
@@ -50,7 +50,7 @@ class SpiritEditor extends EventTarget {
                         this.sendUpdate(upd);
                     }
                 }),
-                readOnly.of(EditorState.readOnly.of(true))
+                readOnly.of(EditorState.readOnly.of(this.readonly))
             ],
         })
     }

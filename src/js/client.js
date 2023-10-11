@@ -6,12 +6,40 @@ import { SpiritEditor, enableResize } from './editor.js'
 import { SpiritSearch } from './search.js'
 import { ChangeSet } from '@codemirror/state'
 
+// url tools
+function setDocumentURL(doc) {
+    if (doc == null) {
+        history.replaceState({}, null, '/');
+    } else {
+        history.replaceState({}, null, `?doc=${doc}`);
+    }
+}
+
+// cookie tools
+function getCookie(key) {
+    let cookies = document.cookie.split(';').map(x => x.trim().split('='));
+    let cell = cookies.filter(([k, v]) => k == key).shift();
+    if (cell == null) {
+        return null;
+    } else {
+        let [_, val] = cell;
+        return decodeURIComponent(val);
+    }
+}
+
+function setCookie(key, val) {
+    let enc = encodeURIComponent(val);
+    document.cookie = `${key}=${enc}; SameSite=Lax`;
+}
+
+// this store the current document id
 class Connection extends EventTarget {
-    constructor(url) {
+    constructor(doc0) {
         super();
 
         // initialize websocket
-        this.ws = new WebSocket(url);
+        let [host, port] = [location.hostname, location.port];
+        this.ws = new WebSocket(`ws://${host}:${port}`);
 
         // track connectivity
         this.ws.addEventListener('open', evt => {
@@ -50,6 +78,12 @@ class Connection extends EventTarget {
     loadDocument(doc) {
         this.ws.send(JSON.stringify({
             cmd: 'load', doc
+        }));
+    }
+
+    closeDocument() {
+        this.ws.send(JSON.stringify({
+            cmd: 'close'
         }));
     }
 
@@ -161,12 +195,12 @@ class External {
     }
 }
 
-function setDocument(doc) {
-    history.replaceState({}, null, `?doc=${doc}`);
-}
+// main entry point
+function initSpirit(doc_start) {
+    console.log(`initSpirit: ${doc_start}`);
 
-function initSpirit(doc) {
-    console.log(`initSpirit: ${doc}`);
+    // this is the doc state
+    let doc_current = null;
 
     // global elements
     let left = document.querySelector('#left');
@@ -177,13 +211,64 @@ function initSpirit(doc) {
     let pdf = document.querySelector('#pdf-button');
     enableResize(left, right, mid);
 
+    // connect with server
+    let connect = new Connection();
+
     // gets created either way
     let extern = new External();
     let editor = new SpiritEditor(left, right, extern);
 
-    // connect with server
-    let [host, port] = [location.hostname, location.port];
-    let connect = new Connection(`ws://${host}:${port}`);
+    // headless case (load from cookie)
+    if (doc_start == null) {
+        let text = getCookie('text');
+        editor.loadDocument(text);
+    }
+
+    /*
+    ** network events
+    */
+
+    // connect open event
+    connect.addEventListener('open', evt => {
+        if (doc_start != null) {
+            connect.loadDocument(doc_start);
+        }
+    });
+
+    // when we receive a load new document command from the server
+    connect.addEventListener('load', evt => {
+        let {doc, text} = evt.detail;
+        doc_current = doc;
+        setDocumentURL(doc);
+        editor.loadDocument(text);
+    });
+
+    // when we receive document updates from the server (from other clients)
+    connect.addEventListener('update', evt => {
+        let chg = evt.detail;
+        editor.applyUpdate(chg);
+    });
+
+    // when we are toggled readonly/editable by the server
+    connect.addEventListener('readonly', evt => {
+        let ro = evt.detail;
+        editor.setReadOnly(ro);
+    });
+
+    // when our own editor registers a text update (to send to server)
+    editor.addEventListener('update', evt => {
+        let chg = evt.detail;
+        if (doc_current == null) {
+            let text = editor.getCode();
+            setCookie('text', text);
+        } else {
+            connect.sendUpdates(chg);
+        }
+    });
+    
+    /*
+    ** search interface
+    */
 
     // make search interface
     let search_element = document.querySelector('#search');
@@ -192,7 +277,15 @@ function initSpirit(doc) {
     // when search results in a document load request
     search.addEventListener('open', evt => {
         let doc1 = evt.detail;
-        connect.loadDocument(doc1);
+        if (doc1 == null) {
+            connect.closeDocument();
+            doc_current = null;
+            setDocumentURL(null);
+            let text = getCookie('text');
+            editor.loadDocument(text);
+        } else {
+            connect.loadDocument(doc1);
+        }
     });
 
     // when search results in a document create request
@@ -200,12 +293,10 @@ function initSpirit(doc) {
         let text = evt.detail;
         connect.createDocument(text);
     });
-
-    // when our own editor registers a text update (to send to server)
-    editor.addEventListener('update', evt => {
-        let chg = evt.detail;
-        connect.sendUpdates(chg);
-    });
+    
+    /*
+    ** pure user interface events
+    */
 
     // user interface keybindings
     document.addEventListener('keydown', evt => {
@@ -230,38 +321,14 @@ function initSpirit(doc) {
         }
     });
 
-    // when receive a load new document command from the server
-    connect.addEventListener('load', evt => {
-        let {doc, text} = evt.detail;
-        setDocument(doc);
-        editor.loadDocument(text);
-    });
-
-    // when we receive document updates from the server (from other clients)
-    connect.addEventListener('update', evt => {
-        let chg = evt.detail;
-        editor.applyUpdate(chg);
-    });
-
-    // when we are toggled readonly/editable by the server
-    connect.addEventListener('readonly', evt => {
-        let ro = evt.detail;
-        editor.setReadOnly(ro);
-    });
-
-    // when we establish the websocket connection
-    connect.addEventListener('open', evt => {
-        connect.loadDocument(doc);
-    });
-
-    // connect export button handlers
+    // connect export button handlers (need to handle doc == null)
     mdn.addEventListener('click', evt => {
-        window.location = `/md/${doc}`;
+        window.location = `/md/${doc_current}`;
     });
     tex.addEventListener('click', evt => {
-        window.location = `/latex/${doc}`;
+        window.location = `/latex/${doc_current}`;
     });
     pdf.addEventListener('click', evt => {
-        window.location = `/pdf/${doc}`;
+        window.location = `/pdf/${doc_current}`;
     });
 }

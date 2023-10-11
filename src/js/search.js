@@ -40,12 +40,10 @@ class SpiritSearch extends EventTarget {
         this.query.addEventListener('keydown', evt => {
             if (evt.key == 'Enter') {
                 let doc = this.getDocument();
-                if (doc != null) {
-                    this.dispatchEvent(
-                        new CustomEvent('open', {detail: doc})
-                    );
-                    this.hide();
-                }
+                this.dispatchEvent(
+                    new CustomEvent('open', {detail: doc})
+                );
+                this.hide();
                 evt.preventDefault();
             } else if (evt.key == 'Escape') {
                 this.hide();
@@ -107,6 +105,9 @@ class SpiritSearch extends EventTarget {
 
     async runQuery(text) {
         let resp = await this.extern.search(text);
+        if (text.length == 0) {
+            resp.unshift([null, 'Scratch']);
+        }
         this.populateResults(resp);
     }
 
@@ -118,7 +119,7 @@ class SpiritSearch extends EventTarget {
 
             let dtag = document.createElement('span');
             dtag.classList.add('result-doc');
-            dtag.textContent = doc;
+            dtag.textContent = doc ?? '/';
 
             let ttag = document.createElement('span');
             ttag.classList.add('result-title');
@@ -143,7 +144,7 @@ class SpiritSearch extends EventTarget {
         if (curr) {
             let item = curr.querySelector('.result-doc');
             let doc = item.textContent;
-            return doc;
+            return (doc == '/') ? null : doc;
         }
         return null;
     }
