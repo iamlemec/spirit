@@ -585,7 +585,6 @@ function parseInline(src) {
         // link
         if (cap = inline.link.exec(src)) {
             let [mat, pre, text, href] = cap;
-            href = escape_html(href);
             let elem;
             if (pre == '!') {
                 elem = new Image(href, text);

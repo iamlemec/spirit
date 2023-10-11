@@ -34,6 +34,10 @@ function refsLatex(elem, ctx) {
     }
 }
 
+function escapeLatex(text) {
+    return text.replace(/([#$%&~_^{}])/g, '\\$1');
+}
+
 function renderList(elems, ctx, sep='') {
     let child = elems.map(e => renderLatex(e, ctx));
     return child.join(sep);
@@ -48,7 +52,7 @@ function renderLatex(elem, ctx) {
 
     // raw string
     if (typeof(elem) == 'string') {
-        return elem;
+        return escapeLatex(elem);
     }
 
     // raw array
@@ -85,7 +89,8 @@ function renderLatex(elem, ctx) {
 
     // monospace text
     if (klass == 'Monospace') {
-        return `\\texttt{${elem.text}}`;
+        let text = escapeLatex(elem.text);
+        return `\\texttt{${text}}`;
     }
 
     // hyperlink
@@ -96,7 +101,15 @@ function renderLatex(elem, ctx) {
 
     // code
     if (klass == 'Code') {
-        return `\\texttt{${elem.code}}`;
+        let code = escapeLatex(elem.code);
+        return `\\texttt{${code}}`;
+    }
+
+    // list
+    if (klass == 'List') {
+        let env = (elem.tag == 'ol') ? 'enumerate' : 'itemize';
+        let items = elem.children.map(e => `\\item ${renderContainer(e, ctx)}`).join('\n');
+        return `\\begin{${env}}\n${items}\n\\end{${env}}`;
     }
 
     // inline math
@@ -167,17 +180,23 @@ function renderLatex(elem, ctx) {
     
     // top level document
     if (klass == 'Document') {
-        let pack = ['amsmath', 'amssymb', 'hyperref', 'cleveref', 'geometry'];
+        let title = (ctx.title != null) ? renderContainer(ctx.title) : null;
+        let pack = ['amsmath', 'amssymb', 'xcolor', 'hyperref', 'cleveref', 'geometry'];
+        let hopt = ['colorlinks=true', 'urlcolor=neonblue'];
+        if (title != null) {
+            hopt.push(`pdftitle={${title}}`);
+        }
         let cmds = [
             '\\geometry{margin=1.25in}',
             '\\setlength{\\parindent}{0cm}',
             '\\setlength{\\parskip}{0.3cm}',
-            '\\renewcommand{\\baselinestretch}{1.1}'
+            '\\renewcommand{\\baselinestretch}{1.1}',
+            '\\definecolor{neonblue}{rgb}{0.122, 0.435, 0.945}',
+            `\\hypersetup{${hopt.join(',')}}`,
         ];
         let pre = pack.map(p => `\\usepackage{${p}}`).join('\n') + '\n\n' + cmds.join('\n');
-        if (ctx.title != null) {
-            let title = renderContainer(ctx.title);
-            pre += `\n\n\\title{\\vspace{-3em}${title}\\vspace{-3em}}\n\\date{}`;
+        if (title != null) {
+            pre += `\n\n\\title{\\vspace{-3em}${title}\\vspace{-3em}}\n\\author{}\n\\date{}`;
         }
         let body = renderContainer(elem, ctx, '\n\n');
         return `\\documentclass[12pt]{article}\n\n${pre}\n\n\\begin{document}\n\n${body}\n\n\\end{document}\n`;

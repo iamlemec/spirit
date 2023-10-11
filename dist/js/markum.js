@@ -458,7 +458,7 @@ function parseBlock(src) {
         let [mat] = cap;
         let tab = parseTable(mat);
         return new TableWrapper(tab, {});
-    }    
+    }
 
     // top-level paragraph (fallback)
     return parseInline(src);
