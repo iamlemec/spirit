@@ -97,7 +97,7 @@ a, a:visited {
 
 /* figures */
 
-.figure, .table {
+.table {
     display: flex;
     flex-direction: column;
     justify-content: center;

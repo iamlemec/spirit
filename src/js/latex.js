@@ -60,7 +60,17 @@ function renderLatex(elem, ctx) {
     if (klass == 'Container' || klass == 'Div' || klass == 'Span') {
         return renderContainer(elem, ctx);
     }
-    
+
+    // line break
+    if (klass == 'Newline') {
+        return ' \\\\\n';
+    }
+
+    // escape sequence
+    if (klass == 'Escape') {
+        return `\\${elem.text}`;
+    }
+
     // italic text
     if (klass == 'Italic') {
         let text = renderContainer(elem, ctx);
@@ -76,6 +86,17 @@ function renderLatex(elem, ctx) {
     // monospace text
     if (klass == 'Monospace') {
         return `\\texttt{${elem.text}}`;
+    }
+
+    // hyperlink
+    if (klass == 'Link') {
+        let text = renderContainer(elem, ctx);
+        return `\\href{${elem.attr.href}}{${text}}`;
+    }
+
+    // code
+    if (klass == 'Code') {
+        return `\\texttt{${elem.code}}`;
     }
 
     // inline math
@@ -118,6 +139,12 @@ function renderLatex(elem, ctx) {
         return `\\begin{tabular}{${astr}}\n${htex} \\\\\n\\hline\n${btex}\n\\end{tabular}`;
     }
 
+    if (klass == 'TableWrapper') {
+        let [child] = elem.children;
+        let table = renderLatex(child, ctx);
+        return `\\begin{center}\n${table}\n\\end{center}`;
+    }
+
     if (klass == 'Heading') {
         let level = Math.min(5, elem.level);
         let text = renderContainer(elem, ctx).trim();
@@ -140,7 +167,7 @@ function renderLatex(elem, ctx) {
     
     // top level document
     if (klass == 'Document') {
-        let pack = ['amsmath', 'amssymb', 'cleveref', 'geometry'];
+        let pack = ['amsmath', 'amssymb', 'hyperref', 'cleveref', 'geometry'];
         let cmds = [
             '\\geometry{margin=1.25in}',
             '\\setlength{\\parindent}{0cm}',
@@ -157,5 +184,5 @@ function renderLatex(elem, ctx) {
     }
 
     // fall back to html?
-    return `\\texttt{Uknown element of type: ${klass}}`;
+    return `\\texttt{Unknown element of type: ${klass}}`;
 }

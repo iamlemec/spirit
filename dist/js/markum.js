@@ -95,6 +95,7 @@ let block = {
     envbeg: /^\>\>(\!|\*|\!\*|\*\!)? *([\w-]+) *(?:refargs)?\s*/,
     envend: /^\<\<\s*/,
     list: /^((?: *(?:bull) [^\n]*(?:\n|$))+)\s*$/,
+    table: /^((?: *\|[^\n]+\| *(?:\n|$))+)\s*$/,
 };
 
 block._href = /\s*<?([\s\S]*?)>?(?:\s+['"]([\s\S]*?)['"])?\s*/;
@@ -451,6 +452,13 @@ function parseBlock(src) {
         let [mat] = cap;
         return parseList(mat);
     }
+
+    // table
+    if (cap = block.table.exec(src)) {
+        let [mat] = cap;
+        let tab = parseTable(mat);
+        return new TableWrapper(tab, {});
+    }    
 
     // top-level paragraph (fallback)
     return parseInline(src);
@@ -1284,6 +1292,14 @@ class Table extends Container {
         );
         super('table', [head, body], attr);
         this.align = align;
+    }
+}
+
+class TableWrapper extends Div {
+    constructor(table, args) {
+        let attr = args ?? {};
+        let attr1 = mergeAttr(attr, {class: 'table'});
+        super(table, attr1);
     }
 }
 
