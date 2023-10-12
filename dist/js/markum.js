@@ -903,29 +903,23 @@ class Math extends Element {
 // handles counters for footnotes/equations/figures
 class Number extends Element {
     constructor(name, args) {
-        let {title, id, bare} = args ?? {};
+        let {title, bare, id} = args ?? {};
         super('span', false, {class: 'number'});
         this.name = name;
         this.title = title;
-        this.id = id;
         this.bare = bare ?? true;
+        this.id = id;
     }
 
     refs(ctx) {
-        if (this.title == null) {
-            this.num = ctx.incNum(this.name);
-            let title = capitalize(this.name);
-            this.label = `${title} ${this.num}`;
-        } else {
-            this.label = this.title;
-        }
+        let refer = this.title ?? `${capitalize(this.name)} ${ctx.incNum(this.id)}`;
         if (this.id != null) {
-            ctx.addRef(this.id, this.label);
+            ctx.addRef(this.id, refer);
         }
     }
 
     inner(ctx) {
-        return this.bare ? this.num : this.label;
+        return this.title ?? (this.bare ? ctx.getNum(this.id) : ctx.getRef(this.id));
     }
 }
 
@@ -1001,13 +995,13 @@ class Figure extends Div {
 
 class Equation extends Div {
     constructor(tex, args) {
-        let {multiline, number, id, tag, ...attr} = args ?? {};
+        let {multiline, number, id, title, ...attr} = args ?? {};
         multiline = multiline ?? false;
         number = number ?? true;
 
         // set up inner math and optional numbering
         let math = new Math(tex, {multiline, display: true});
-        let num = number ? new Number('equation', {title: tag, id}) : null;
+        let num = number ? new Number('equation', {title, id}) : null;
         let attr1 = mergeAttr(attr, {class: 'equation', id});
         super([math, num], attr1);
 
