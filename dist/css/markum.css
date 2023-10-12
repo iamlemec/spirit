@@ -10,6 +10,7 @@
 
 .block {
     padding: 5px;
+    word-wrap: anywhere;
 }
 
 .bold {
