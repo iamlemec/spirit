@@ -913,9 +913,7 @@ class Number extends Element {
 
     refs(ctx) {
         let refer = this.title ?? `${capitalize(this.name)} ${ctx.incNum(this.id)}`;
-        if (this.id != null) {
-            ctx.addRef(this.id, refer);
-        }
+        ctx.addRef(this.id, refer);
     }
 
     inner(ctx) {
