@@ -364,12 +364,14 @@ function initSpirit(doc_start) {
     // connect export button handlers (need to handle doc == null)
     mdn.addEventListener('click', evt => {
         let text = editor.getCode();
-        downloadText(doc_current, text);
+        let fname = doc_current ?? 'document.md';
+        downloadText(fname, text);
     });
     tex.addEventListener('click', async evt => {
         let text = editor.getCode();
         let latex = await exportLatex(text);
-        let [fbase, _] = splitExtension(doc_current);
+        let doc_name = doc_current ?? 'document.md';
+        let [fbase, _] = splitExtension(doc_name);
         let fname = `${fbase}.tex`;
         downloadText(fname, latex);
     });
