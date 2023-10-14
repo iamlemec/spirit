@@ -366,7 +366,7 @@ async function serveSpirit(store, host, port) {
     });
 
     // set up static paths
-    app.use(express.static('dist'));
+    app.use(express.static('.'));
 
     // connect serve index
     app.get('/', (req, res) => {
