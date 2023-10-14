@@ -58,6 +58,7 @@
 .list > ul,
 .list > ol {
     padding-left: 30px;
+    margin: 0px;
 }
 
 .comment {

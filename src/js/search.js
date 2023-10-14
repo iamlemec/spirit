@@ -40,9 +40,12 @@ class SpiritSearch extends EventTarget {
         this.query.addEventListener('keydown', evt => {
             if (evt.key == 'Enter') {
                 let doc = this.getDocument();
-                this.dispatchEvent(
-                    new CustomEvent('open', {detail: doc})
-                );
+                if (doc != null) {
+                    doc = (doc == '/') ? null : doc;
+                    this.dispatchEvent(
+                        new CustomEvent('open', {detail: doc})
+                    );
+                }
                 this.hide();
                 evt.preventDefault();
             } else if (evt.key == 'Escape') {
@@ -144,7 +147,7 @@ class SpiritSearch extends EventTarget {
         if (curr) {
             let item = curr.querySelector('.result-doc');
             let doc = item.textContent;
-            return (doc == '/') ? null : doc;
+            return doc;
         }
         return null;
     }

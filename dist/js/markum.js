@@ -912,12 +912,19 @@ class Number extends Element {
     }
 
     refs(ctx) {
-        let refer = this.title ?? `${capitalize(this.name)} ${ctx.incNum(this.id)}`;
-        ctx.addRef(this.id, refer);
+        if (this.title == null) {
+            this.num = ctx.incNum(this.name);
+            this.refer = `${capitalize(this.name)} ${this.num}`;
+        } else {
+            this.refer = this.title;
+        }
+        if (this.id != null) {
+            ctx.addRef(this.id, this.refer);
+        }
     }
 
     inner(ctx) {
-        return this.title ?? (this.bare ? ctx.getNum(this.id) : ctx.getRef(this.id));
+        return this.title ?? (this.bare ? this.num : this.refer);
     }
 }
 
