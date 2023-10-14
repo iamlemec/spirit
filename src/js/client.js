@@ -3,8 +3,13 @@
 export { initSpirit }
 
 import { SpiritEditor, enableResize } from './editor.js'
+import { exportLatex } from './export.js';
 import { SpiritSearch } from './search.js'
 import { ChangeSet } from '@codemirror/state'
+
+/*
+** web related tools
+*/
 
 // url tools
 function setDocumentURL(doc) {
@@ -31,6 +36,36 @@ function setCookie(key, val) {
     let enc = encodeURIComponent(val);
     document.cookie = `${key}=${enc}; SameSite=Lax`;
 }
+
+// web split extension
+function splitExtension(path) {
+    let parts = path.split('.');
+    let ext = parts.pop();
+    let base = parts.join('.');
+    return [base, ext];
+}
+
+// download named blob
+function downloadBlob(name, blob) {
+    let url = URL.createObjectURL(blob);
+    let elem = document.createElement('a');
+    elem.setAttribute('href', url);
+    elem.setAttribute('download', `${name}`);
+    elem.style.display = 'none';
+    document.body.appendChild(elem);
+    elem.click();
+    document.body.removeChild(elem);
+}
+
+// download named text
+function downloadText(name, text) {
+    let blob = new Blob([text], {type: 'text/plain'});
+    downloadBlob(name, blob);
+}
+
+/*
+** network related tools
+*/
 
 // this store the current document id
 class Connection extends EventTarget {
@@ -114,6 +149,7 @@ class Connection extends EventTarget {
     }
 }
 
+// retrieve and cache external references
 class External {
     constructor() {
         this.imgs = new Map();
@@ -194,6 +230,10 @@ class External {
         this.cits.clear();
     }
 }
+
+/*
+** prime time
+*/
 
 // main entry point
 function initSpirit(doc_start) {
@@ -323,12 +363,14 @@ function initSpirit(doc_start) {
 
     // connect export button handlers (need to handle doc == null)
     mdn.addEventListener('click', evt => {
-        window.location = `/md/${doc_current}`;
+        let text = editor.getCode();
+        downloadText(doc_current, text);
     });
-    tex.addEventListener('click', evt => {
-        window.location = `/latex/${doc_current}`;
-    });
-    pdf.addEventListener('click', evt => {
-        window.location = `/pdf/${doc_current}`;
+    tex.addEventListener('click', async evt => {
+        let text = editor.getCode();
+        let latex = await exportLatex(text);
+        let [fbase, _] = splitExtension(doc_current);
+        let fname = `${fbase}.tex`;
+        downloadText(fname, latex);
     });
 }
