@@ -1,3 +1,5 @@
+import { renderGum } from '../node_modules/gum.js/js/gum.js';
+
 // latex rendering
 
 
@@ -141,6 +143,21 @@ function renderLatex(elem, ctx) {
         return `\\begin{center}\n${table}\n\\end{center}`;
     }
 
+    if (klass == 'Gum') {
+        // render gum
+        let args = {pixel: elem.pixel};
+        let code = ctx.lib + '\n' + elem.code;
+        let svg = renderGum(code, args);
+
+        // set name and store
+        let num = ++ctx.igum;
+        let fname = `gum-${num}`;
+        ctx.svgs.set(fname, svg);
+
+        // return include
+        return `\\includesvg{${fname}}`;
+    }
+
     if (klass == 'Heading') {
         let level = Math.min(5, elem.level);
         let text = renderContainer(elem, ctx).trim();
@@ -150,7 +167,6 @@ function renderLatex(elem, ctx) {
     if (klass == 'NestedNumber') {
         incrementCounter(ctx, elem.name, elem.level);
         return '';
-        
     }
 
     if (klass == 'Title') {
@@ -163,12 +179,32 @@ function renderLatex(elem, ctx) {
     
     // top level document
     if (klass == 'Document') {
+        // initialize context for svg
+        ctx.igum = 0;
+        ctx.svgs = new Map();
+
+        // render body container
+        let body = renderContainer(elem, ctx, '\n\n');
+
+        // render title
         let title = (ctx.title != null) ? renderContainer(ctx.title) : null;
+
+        // make svg files
+        let presvg = [...ctx.svgs.entries()].map(([fname, svg]) =>
+            `\\begin{filecontents*}[overwrite]{${fname}.svg}\n${svg}\n\\end{filecontents*}`
+        ).join('\n\n');
+
+        // handle package imports
         let pack = ['amsmath', 'amssymb', 'xcolor', 'hyperref', 'cleveref', 'geometry'];
         let hopt = ['colorlinks=true', 'urlcolor=neonblue'];
+        if (ctx.svgs.size > 0) {
+            pack.push('svg');
+        }
         if (title != null) {
             hopt.push(`pdftitle={${title}}`);
         }
+
+        // preamble commands
         let cmds = [
             '\\geometry{margin=1.25in}',
             '\\setlength{\\parindent}{0cm}',
@@ -177,11 +213,14 @@ function renderLatex(elem, ctx) {
             '\\definecolor{neonblue}{rgb}{0.122, 0.435, 0.945}',
             `\\hypersetup{${hopt.join(',')}}`,
         ];
-        let pre = pack.map(p => `\\usepackage{${p}}`).join('\n') + '\n\n' + cmds.join('\n');
+
+        // make preamble
+        let pre = pack.map(p => `\\usepackage{${p}}`).join('\n') + '\n\n' + cmds.join('\n') + '\n\n' + presvg;
         if (title != null) {
             pre += `\n\n\\title{\\vspace{-3em}${title}\\vspace{-3em}}\n\\author{}\n\\date{}`;
         }
-        let body = renderContainer(elem, ctx, '\n\n');
+
+        // return full document
         return `\\documentclass[12pt]{article}\n\n${pre}\n\n\\begin{document}\n\n${body}\n\n\\end{document}\n`;
     }
 
