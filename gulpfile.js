@@ -32,6 +32,7 @@ gulp.task('js', () => {
             'src/js/markum.js',
             'src/js/editor.js',
             'src/js/client.js',
+            'src/js/export.js',
         ],
         plugins: [
             resolve({

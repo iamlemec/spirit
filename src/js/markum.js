@@ -82,7 +82,7 @@ async function renderMarkdown(src, extern) {
     let html;
     try {
         let tree = parseDocument(src);
-        let ctx = new Context(extern);
+        let ctx = new Context({extern});
         await tree.refs(ctx);
         html = await tree.html(ctx);
     } catch (e) {
@@ -103,7 +103,7 @@ let block = {
     lheading: /^([^\n]+)\n *(=|-){2,}\s*$/,
     blockquote: /^q*>\s*\n?/,
     code: /^``(\*)? *(?:refargs)?(?:\n)?(?: |\n)?/,
-    equation: /^\$\$(\*|&|\*&|&\*)? *(?:refargs)?\s*/,
+    equation: /^\$\$(\*&|&\*|\*|&)? *(?:refargs)?\s*/,
     title: /^#\! *(?:refargs)?\s*([^\n]*)\s*/,
     figure: /^\!([a-z]*)?(\*)? *(?:refargs)?\s*/,
     upload: /^\!\!(gum)? *(?:refargs)?\s*$/,
@@ -690,8 +690,14 @@ function mergeAttr(...args) {
  */
 
 class Context {
-    constructor(extern) {
+    constructor(args) {
+        let {extern, macros} = args ?? {};
+
+        // parsing resources
         this.extern = extern ?? null;
+        this.macros = macros ?? {};
+
+        // document state
         this.title = null;
         this.count = new DefaultCounter();
         this.refer = new Map();
@@ -916,7 +922,9 @@ class Math extends Element {
     }
 
     html(ctx) {
-        return katex.renderToString(this.tex, {displayMode: this.display, throwOnError: false});
+        return katex.renderToString(this.tex, {
+            displayMode: this.display, throwOnError: false, macros: ctx.macros
+        });
     }
 }
 

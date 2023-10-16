@@ -35,7 +35,7 @@ async function parseRefs(doc) {
     // parse title and blurb
     let ttext = await ctx.title.inner(ctx);
     tree.children = tree.children.slice(0, 2);
-    let prev = await tree.html();
+    let prev = await tree.html(ctx);
 
     // parse popups
     for (let [k, v] of ctx.popup) {
