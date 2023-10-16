@@ -2,6 +2,7 @@
 
 @import './katex.css';
 @import './gum.css';
+@import './ibmplexmono.css';
 
 :root {
     --neon-blue: rgb(31, 111, 241);
@@ -22,12 +23,10 @@
 }
 
 .monospace {
-    font-size: 95%;
-    font-family: monospace;
+    font-size: 80%;
     background-color: rgba(0, 0, 0, 0.07);
     border-radius: 3px;
-    padding: 0.15em 0.25em;
-    vertical-align: 0.15em;
+    padding: 0.1em 0.2em;
 }
 
 .strikeout {
@@ -147,12 +146,6 @@ table th, table td {
     width: 100%;
 }
 
-/* math */
-
-.katex-display {
-    margin: 0;
-}
-
 /* references */
 
 a.reference.fail {
@@ -181,7 +174,7 @@ a.reference.fail {
     left: 50%;
     top: 50%;
     transform: translate(-50%, calc(-100% - 15px));
-    min-width: 50px;
+    min-width: 250px;
     border-radius: 5px;
     padding: 10px;
     color: white;
@@ -247,7 +240,11 @@ a.reference.fail {
     font-family: monospace;
     border: 1px solid black;
     border-radius: 3px;
-    padding: 1px 6px;
-    vertical-align: 1px;
-    font-size: 110%;
+    padding: 0px 6px;
+    vertical-align: 2px;
+    font-size: 90%;
+}
+
+.footnote .number:hover {
+    background-color: #DDD;
 }

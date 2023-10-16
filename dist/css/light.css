@@ -1,0 +1,29 @@
+/* light theme for spirit */
+
+@import './ibmplexsans.css';
+
+.spirit {
+    font-family: IBMPlexSans;
+    font-size: 18px;
+    line-height: 1.5;
+}
+
+.spirit .block {
+    margin-bottom: 10px;
+}
+
+.spirit .monospace {
+    font-family: IBMPlexMono;
+}
+
+.spirit .heading {
+    margin-top: 15px;
+}
+
+.spirit .figure {
+    margin: 20px 0;
+}
+
+.spirit .katex {
+    font-size: 110%;
+}

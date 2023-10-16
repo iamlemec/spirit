@@ -1,0 +1,22 @@
+/* dark theme for spirit */
+
+:root {
+    --spirit-background: #1D1E20;
+    --spirit-foreground: #C4C4C5;
+}
+
+.spirit {
+    color: var(--spirit-foreground);
+}
+
+.spirit .block {
+    margin-bottom: 10px;
+}
+
+.spirit .heading {
+    margin-top: 15px;
+}
+
+.spirit .figure {
+    margin: 20px 0;
+}

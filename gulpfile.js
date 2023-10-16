@@ -55,6 +55,11 @@ gulp.task('css', () => gulp.src(['./src/css/*'])
     .pipe(gulp.dest('./dist/css'))
 );
 
+// spirit fonts
+gulp.task('spirit-fonts', () => gulp.src(['./src/css/fonts/*'])
+    .pipe(gulp.dest('./dist/css/fonts'))
+);
+
 // gum font css
 gulp.task('gum-fonts-css', () => gulp.src(['./node_modules/gum.js/css/fonts.css'])
     .pipe(rename('gum.css'))
@@ -84,7 +89,7 @@ gulp.task('katex-fonts-data', () => gulp.src(['./node_modules/katex/dist/fonts/*
 gulp.task('katex-fonts', gulp.parallel('katex-fonts-css', 'katex-fonts-data'));
 
 // all fonts
-gulp.task('fonts', gulp.parallel('gum-fonts', 'katex-fonts'));
+gulp.task('fonts', gulp.parallel('spirit-fonts', 'gum-fonts', 'katex-fonts'));
 
 // all images
 gulp.task('images', () => gulp.src(['./src/img/*'])
@@ -145,6 +150,7 @@ gulp.task('server-respawn', function(done) {
 gulp.task('watch-respawn', function() {
     gulp.watch(['src/js/*'], gulp.series(['js', 'server-respawn']));
     gulp.watch(['src/css/*'], gulp.series('css'));
+    gulp.watch(['src/css/fonts/*'], gulp.series('fonts'));
     gulp.watch(['src/img/*'], gulp.series('images'));
 });
 

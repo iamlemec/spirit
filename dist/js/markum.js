@@ -348,8 +348,14 @@ function parseBlock(src) {
                 child = new Div(e.message);
             }
         } else if (tag == 'img') {
-            let {key, ...args1} = args;
-            child = new InternalImage(key, args1);
+            let {key, url, ...args1} = args;
+            if (key != null) {
+                child = new InternalImage(key, args1);
+            } else if (url != null) {
+                child = new Image(url, args1);
+            } else {
+                child = new ErrorMessage('No `src` or `key` provided');
+            }
         } else if (tag == 'vid') {
             child = new Video(body, args);
         } else if (tag == 'svg') {
@@ -1095,8 +1101,8 @@ class Link extends Container {
 
 class Image extends Element {
     constructor(src, args) {
-        let attr = args ?? {};
-        let attr1 = mergeAttr(attr, {src, class: 'image'});
+        let {width, ...attr} = args ?? {};
+        let attr1 = mergeAttr(attr, {src, class: 'image', style: `width: ${width}%`});
         super('img', true, attr1);
     }
 }
