@@ -1,5 +1,9 @@
 /* dark theme for spirit */
 
+@import './ibmplexsans.css';
+@import './ibmplexmono.css';
+
+
 :root {
     --spirit-background: #1D1E20;
     --spirit-foreground: #C4C4C5;
@@ -7,10 +11,17 @@
 
 .spirit {
     color: var(--spirit-foreground);
+    font-family: IBMPlexSans;
+    font-size: 18px;
+    line-height: 1.5;
 }
 
 .spirit .block {
     margin-bottom: 10px;
+}
+
+.spirit .monospace {
+    font-family: IBMPlexMono;
 }
 
 .spirit .heading {
@@ -19,4 +30,8 @@
 
 .spirit .figure {
     margin: 20px 0;
+}
+
+.spirit .katex {
+    font-size: 110%;
 }

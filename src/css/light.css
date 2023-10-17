@@ -1,6 +1,7 @@
 /* light theme for spirit */
 
 @import './ibmplexsans.css';
+@import './ibmplexmono.css';
 
 .spirit {
     font-family: IBMPlexSans;
@@ -16,7 +17,15 @@
     font-family: IBMPlexMono;
 }
 
+.spirit .title {
+    font-weight: 500;
+}
+
 .spirit .heading {
+    font-weight: 400;
+}
+
+.spirit .heading.heading-1 {
     margin-top: 15px;
 }
 

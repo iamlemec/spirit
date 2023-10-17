@@ -97,6 +97,10 @@ a, a:visited {
     align-items: center;
 }
 
+.katex-display {
+    margin: 0;
+}
+
 /* figures */
 
 .figure, .table {
@@ -116,7 +120,7 @@ ul, ol {
     padding-left: 30px;
 }
 
-li {
+ul li {
     list-style: square;
 }
 
@@ -173,7 +177,7 @@ a.reference.fail {
     position: absolute;
     left: 50%;
     top: 50%;
-    transform: translate(-50%, calc(-100% - 15px));
+    transform: translate(-50%, calc(-100% - 20px));
     min-width: 250px;
     border-radius: 5px;
     padding: 10px;
@@ -225,6 +229,11 @@ a.reference.fail {
 
 .popup .block {
     padding: 0;
+}
+
+.popup .block:first-child,
+.popup .block:last-child {
+    margin: 0;
 }
 
 .popup .code {

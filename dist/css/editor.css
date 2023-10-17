@@ -1,4 +1,6 @@
 @import './search.css';
+@import './ibmplexsans.css';
+@import './ibmplexmono.css';
 
 body {
     margin: 0;
@@ -26,6 +28,20 @@ body {
     overflow-y: scroll;
     overflow-x: hidden;
     scrollbar-width: none;
+    font-family: IBMPlexSans;
+    font-size: 18px;
+}
+
+#right .monospace {
+    font-family: IBMPlexMono;
+}
+
+#right .title {
+    font-weight: 500;
+}
+
+#right .heading {
+    font-weight: 500;
 }
 
 #left .cm-editor {
@@ -54,8 +70,15 @@ body {
 /* elltwo */
 
 .block {
-    padding: 10px;
-    margin: 10px;
+    padding: 10px 20px;
+}
+
+.block:first-child {
+    margin-top: 10px;
+}
+
+.block:last-child {
+    margin-bottom: 10px;
 }
 
 /* svg icons */
