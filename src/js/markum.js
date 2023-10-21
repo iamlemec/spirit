@@ -78,11 +78,11 @@ function parsePreamble(raw) {
  * High-level render
  */
 
-async function renderMarkdown(src, extern) {
+async function renderMarkdown(src, extern, macros) {
     let html;
     try {
         let tree = parseDocument(src);
-        let ctx = new Context({extern});
+        let ctx = new Context({extern, macros});
         await tree.refs(ctx);
         html = await tree.html(ctx);
     } catch (e) {
@@ -941,8 +941,9 @@ class Math extends Element {
 // handles counters for footnotes/equations/figures
 class Number extends Element {
     constructor(name, args) {
-        let {title, bare, id} = args ?? {};
-        super('span', false, {class: 'number'});
+        let {title, bare, id, ...attr} = args ?? {};
+        let attr1 = mergeAttr(attr, {class: 'number'});
+        super('span', false, attr1);
         this.name = name;
         this.title = title;
         this.bare = bare ?? true;
@@ -1191,7 +1192,7 @@ class Reference extends Element {
         if (ctx.hasRef(this.id)) {
             let ref = ctx.getRef(this.id);
             let pop = (targ != null) ? `<div class="popup">${targ}</div>` : '';
-            return `<span class="popper"><a href="#${this.id}" class="reference">${ref}</a>${pop}</span>`;
+            return `<span class="popper"><a href="#${this.id}" class="popover reference">${ref}</a>${pop}</span>`;
         } else {
             return `<a class="reference fail">@${this.id}</a>`;
         }
@@ -1218,7 +1219,7 @@ class ExtRef extends Element {
         if (ref != null) {
             let url = this.id.replace(/:/, '#');
             let pop = (targ != null) ? `<div class="popup external">${targ}</div>` : '';
-            return `<span class="popper"><a href="/${url}" class="reference external">${ref}</a>${pop}</span>`;
+            return `<span class="popper"><a href="/${url}" class="popover reference external">${ref}</a>${pop}</span>`;
         } else {
             return `<a class="reference external fail">[[${this.id}]]</a>`;
         }
@@ -1239,7 +1240,7 @@ class Citation extends Element {
             let ptxt = `${cite.title}`;
             let rtxt = `${cite.author} (${cite.year})`;
             let pop = `<div class="popup citation">${ptxt}</div>`;
-            return `<span class="popper"><a href="" class="reference citation">${rtxt}</a>${pop}</span>`;
+            return `<span class="popper"><a href="" class="popover reference citation">${rtxt}</a>${pop}</span>`;
         } else {
             return `<a class="reference citation fail">@@${this.id}</a>`;
         }
@@ -1265,7 +1266,7 @@ class Sidebar extends Div {
 class Footnote extends Span {
     constructor(children, args) {
         let attr = args ?? {};
-        let num = new Number('footnote');
+        let num = new Number('footnote', {class: 'popover'});
         let pop = new Popup(children);
         let attr1 = mergeAttr(attr, {class: 'footnote popper'});
         super([num, pop], attr1);

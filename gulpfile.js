@@ -8,12 +8,13 @@ import { parseArgs } from 'node:util';
 
 // parse arguments
 const {
-    values: { host, port },
+    values: { host, port, conf },
 } = parseArgs({
     args: process.argv.slice(3),
     options: {
         host: { type: 'string', default: 'localhost' },
         port: { type: 'string', default: '8000'},
+        conf: { type: 'string', default: '' },
     },
 });
 
@@ -124,6 +125,9 @@ function respawnServer() {
         server.kill();
     }
     let args = [`--host=${host}`, `--port=${port}`];
+    if (conf.length > 0) {
+        args.push(`--conf=${conf}`);
+    }
     server = spawn(
         'node', ['src/js/console.js', 'serve', ...args], {stdio: 'inherit'}
     );

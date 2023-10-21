@@ -165,6 +165,12 @@ class ClientHandler extends EventTarget {
         });
     }
 
+    config(conf) {
+        this.ws.send(JSON.stringify({
+            cmd: 'config', data: conf
+        }));
+    }
+
     load(doc, text) {
         this.ws.send(JSON.stringify({
             cmd: 'load', doc, data: text
@@ -286,7 +292,10 @@ class ClientRouter {
 }
 
 // main entry point
-async function serveSpirit(store, host, port) {
+async function serveSpirit(store, host, port, conf) {
+    // parse arguments
+    conf = conf ?? {};
+
     // create server objects
     const app = express();
     const server = createServer(app);
@@ -305,6 +314,9 @@ async function serveSpirit(store, host, port) {
 
         // create client handler
         let ch = new ClientHandler(ws);
+
+        // send config info
+        ch.config(conf);
 
         // the client is requesting a document
         ch.addEventListener('load', evt => {

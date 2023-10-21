@@ -98,6 +98,10 @@ class Connection extends EventTarget {
                 this.dispatchEvent(
                     new CustomEvent('readonly', {detail: data})
                 );
+            } else if (cmd == 'config') {
+                this.dispatchEvent(
+                    new CustomEvent('config', {detail: data})
+                );
             } else if (cmd == 'update') {
                 let chg = ChangeSet.fromJSON(data);
                 this.dispatchEvent(
@@ -292,6 +296,12 @@ function initSpirit(doc_start) {
     connect.addEventListener('readonly', evt => {
         let ro = evt.detail;
         editor.setReadOnly(ro);
+    });
+
+    // when we receive config from the server
+    connect.addEventListener('config', evt => {
+        let conf = evt.detail;
+        editor.setConfig(conf);
     });
 
     // when our own editor registers a text update (to send to server)

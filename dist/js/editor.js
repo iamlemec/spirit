@@ -91,6 +91,11 @@ class SpiritEditor extends EventTarget {
         });
     }
 
+    setConfig(conf) {
+        let {macros} = conf;
+        this.macros = macros;
+    }
+
     getCode() {
         return getText(this.edit.state);
     }
@@ -100,7 +105,7 @@ class SpiritEditor extends EventTarget {
     }
 
     async setDisp(src) {
-        let html = await renderMarkdown(src, this.extern);
+        let html = await renderMarkdown(src, this.extern, this.macros);
         this.disp.innerHTML = html;
         positionPopups(this.disp);
     }
@@ -110,7 +115,7 @@ class SpiritEditor extends EventTarget {
 function positionPopups(elem) {
     let poppers = elem.querySelectorAll('.popper');
     for (let popper of poppers) {
-        let ref = popper.querySelector('.reference');
+        let ref = popper.querySelector('.popover');
         let pop = popper.querySelector('.popup');
         ref.addEventListener('mouseenter', evt => {
             let rrect = ref.getBoundingClientRect();
@@ -130,7 +135,7 @@ function positionPopups(elem) {
 
             // implement shifters
             let x_shift = `calc(-50% - ${xl_shift-xr_shift}px)`;
-            let y_shift = (xt_pop < wrect.top) ? '15px' : 'calc(-100% - 15px)';
+            let y_shift = (xt_pop < wrect.top) ? '15px' : 'calc(-100% - 20px)';
 
             // set transform style
             pop.style.transform = `translate(${x_shift}, ${y_shift})`;

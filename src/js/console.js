@@ -2,9 +2,16 @@
 
 import fs from 'fs'
 import path from 'path'
+import toml from 'toml'
 import { Command } from 'commander'
 import { exportHtml, exportLatex } from './export.js'
 import { serveSpirit } from './server.js'
+
+// load toml file
+function loadToml(fpath) {
+    let text = fs.readFileSync(fpath, 'utf8');
+    return toml.parse(text);
+}
 
 // do conversion
 async function convert(src, fmt) {
@@ -54,8 +61,10 @@ program.command('serve')
     .option('-s, --store <store>', 'Document storage path', './store')
     .option('-h, --host <host>', 'IP address to serve on', 'localhost')
     .option('-p, --port <port>', 'Port to serve on', 8000)
+    .option('-c, --conf <conf>', 'Path to config file')
     .action(async (opts) => {
-        await serveSpirit(opts.store, opts.host, opts.port);
+        let args = (opts.conf != null) ? loadToml(opts.conf) : {};
+        await serveSpirit(opts.store, opts.host, opts.port, args);
     });
 
 // execute program
