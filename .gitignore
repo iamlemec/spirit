@@ -1,3 +1,5 @@
 /node_modules
 /store
 /backup
+screenlog.*
+config.toml
