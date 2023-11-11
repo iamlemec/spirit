@@ -118,6 +118,7 @@ a, a:visited {
 
 ul, ol {
     padding-left: 30px;
+    margin: 0px;
 }
 
 ul li {

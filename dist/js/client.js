@@ -150,6 +150,18 @@ class Connection extends EventTarget {
             cmd: 'reindex'
         }));
     }
+
+    sendLogin(username, password) {
+        this.ws.send(JSON.stringify({
+            cmd: 'login', data: {username, password}
+        }));
+    }
+
+    sendDebug() {
+        this.ws.send(JSON.stringify({
+            cmd: 'debug'
+        }));
+    }
 }
 
 // retrieve and cache external references
@@ -343,6 +355,20 @@ function initSpirit(doc_start) {
         connect.createDocument(text);
     });
     
+    /* login interface */
+
+    let login = document.querySelector('#login');
+    let login_button = document.querySelector('#login-button');
+    let login_user = document.querySelector('#login-username');
+    let login_pass = document.querySelector('#login-password');
+
+    // connect login button
+    login_button.addEventListener('click', evt => {
+        let username = login_user.value;
+        let password = login_pass.value;
+        connect.sendLogin(username, password);
+    });
+
     /*
     ** pure user interface events
     */
@@ -366,7 +392,17 @@ function initSpirit(doc_start) {
             if (!search.toggle()) {
                 editor.edit.focus();
             }
-            return false;
+            evt.preventDefault();
+        } else if (evt.key == 'F2') {
+            console.log('login');
+            login.classList.toggle('active');
+            evt.preventDefault();
+        } else if (evt.key == 'F3') {
+            console.log('=== DEBUG ===');
+            console.log('doc_current: ' + doc_current);
+            console.log('=============');
+            connect.sendDebug();
+            evt.preventDefault();
         }
     });
 

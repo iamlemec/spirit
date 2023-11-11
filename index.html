@@ -49,18 +49,26 @@
 
 </div>
 
-<div id="search">
-
-<div id="search-window">
+<div id="search" class="overlay">
+<div id="search-window" class="window">
 <div id="search-bar">
     <div id="search-query" contenteditable="true"></div>
     <div id="search-create">+</div>
 </div>
 <div id="search-results"></div>
 </div>
-
 </div>
-        
+
+<div id="login" class="overlay">
+<div id="login-window" class="window">
+<div id="login-box">
+    <div class="login-row"><input id="login-username" type="text" placeholder="username"/></div>
+    <div class="login-row"><input id="login-password" type="text" placeholder="password"/></div>
+    <div class="login-row"><button id="login-button">Login</button></div>
+</div>
+</div>
+</div>
+    
 <script type="module">
 import { initSpirit } from './dist/js/client.js'
 let params = new URLSearchParams(window.location.search);

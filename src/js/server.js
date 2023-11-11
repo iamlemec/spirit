@@ -2,7 +2,10 @@
 
 import fs from 'fs';
 import path from 'path'
+import toml from 'toml'
 import express from 'express'
+import session from 'express-session'
+import NodeEventTarget from 'events'
 import { createServer } from 'http'
 import { WebSocketServer } from 'ws'
 import { ChangeSet, Text } from '@codemirror/state'
@@ -14,7 +17,10 @@ import { exportHtml, exportLatex } from './export.js'
 export { serveSpirit }
 
 // global constants
-const rate = 10000; // autosave rate (milliseconds)
+const conf0 = {
+    secret: 'secret', // cookie secret
+    autosave: 10000 // autosave rate (milliseconds)
+}
 
 // check if subdirectory
 function getLocalPath(store, name) {
@@ -69,8 +75,8 @@ function titleFromFilename(fname) {
                .join(' ');
 }
 
-class DocumentHandler extends EventTarget {
-    constructor(fpath) {
+class DocumentHandler extends NodeEventTarget {
+    constructor(fpath, rate) {
         super();
         this.fpath = fpath;
 
@@ -105,9 +111,7 @@ class DocumentHandler extends EventTarget {
     close() {
         clearInterval(this.timer);
         this.save();
-        this.dispatchEvent(
-            new Event('close')
-        );
+        this.emit('close');
     }
 
     text() {
@@ -117,7 +121,7 @@ class DocumentHandler extends EventTarget {
 
 // self-contained client handler
 // emits: load, update, close, reindex
-class ClientHandler extends EventTarget {
+class ClientHandler extends NodeEventTarget {
     constructor(ws) {
         super();
         this.ws = ws;
@@ -127,30 +131,22 @@ class ClientHandler extends EventTarget {
             console.log(`received: ${msg}`);
             let {cmd, doc, data} = JSON.parse(msg);
             if (cmd == 'load') {
-                this.dispatchEvent(
-                    new CustomEvent('load', { detail: doc })
-                );
+                this.emit('load', { detail: doc });
             } else if (cmd == 'close') {
-                this.dispatchEvent(
-                    new Event('close')
-                );
+                this.emit('close');
             } else if (cmd == 'update') {
                 let chg = ChangeSet.fromJSON(data);
-                this.dispatchEvent(
-                    new CustomEvent('update', { detail: chg })
-                );
+                this.emit('update', { detail: chg });
             } else if (cmd == 'reindex') {
-                this.dispatchEvent(
-                    new Event('reindex')
-                );
+                this.emit('reindex');
+            } else if (cmd == 'login') {
+                this.emit('login', { detail: data });
+            } else if (cmd == 'debug') {
+                this.emit('debug');
             } else if (cmd == 'save') {
-                this.dispatchEvent(
-                    new Event('save')
-                )
+                this.emit('save');
             } else if (cmd == 'create') {
-                this.dispatchEvent(
-                    new CustomEvent('create', { detail: doc })
-                );
+                this.emit('create', { detail: doc });
             } else {
                 console.log(`unknown command: ${cmd}`);
             }
@@ -159,9 +155,7 @@ class ClientHandler extends EventTarget {
         // handle closure
         ws.on('close', () => {
             console.log(`disconnected`);
-            this.dispatchEvent(
-                new Event('close')
-            );
+            this.emit('close');
         });
     }
 
@@ -197,15 +191,17 @@ class ClientHandler extends EventTarget {
 }
 
 class ClientRouter {
-    constructor(store) {
+    constructor(store, rate) {
         this.store = store; // store path
+        this.rate = rate; // autosave rate
         this.docs = new Map(); // document state for fpath
         this.clis = new Multimap(); // groups clients by fpath
-        this.abrt = new Map(); // abort controller for client
     }
 
     // this is trusted: doesn't check for locality or existence
     add(doc, ch) {
+        console.log(`ClientRouter.add: ${doc}`);
+
         // get full path
         let fpath = getLocalPath(this.store, doc);
 
@@ -216,17 +212,15 @@ class ClientRouter {
 
         // open document if needed
         if (!this.docs.has(fpath)) {
-            this.docs.set(fpath, new DocumentHandler(fpath));
+            this.docs.set(fpath, new DocumentHandler(fpath, this.rate));
         }
         let dh = this.docs.get(fpath);
 
         // add client to multimap
         this.clis.add(fpath, ch);
 
-        // hook up event listeners
-        let control = new AbortController();
-        this.abrt.set(ch, control);
-        ch.addEventListener('update', e => {
+        // handle client events
+        ch.addListener('update', e => {
             let chg = e.detail;
             let [first, ...rest] = this.clis.get(fpath);
             if (ch == first) {
@@ -237,18 +231,18 @@ class ClientRouter {
             } else {
                 console.log(`got "update" from non-leader`);
             }
-        }, { signal: control.signal });
-        ch.addEventListener('close', () => {
+        });
+        ch.addListener('close', () => {
             this.del(ch);
-        }, { signal: control.signal });
-        ch.addEventListener('save', () => {
+        });
+        ch.addListener('save', () => {
             let first = this.clis.get(fpath).get(0);
             if (ch == first) {
                 dh.save();
             } else {
                 console.log(`got "save" from non-leader`);
             }
-        }, { signal: control.signal });
+        });
 
         // send document to client
         let text = dh.text();
@@ -261,13 +255,14 @@ class ClientRouter {
 
     del(ch) {
         // noop if not present
-        if (!this.clis.has(ch)) {
+        if (!this.has(ch)) {
             return;
         }
 
-        // disconnect handlers
-        this.abrt.get(ch).abort();
-        this.abrt.delete(ch);
+        // disconnect editing handlers
+        ch.removeAllListeners('update');
+        ch.removeAllListeners('close');
+        ch.removeAllListeners('save');
 
         // remove client from multimap
         let idx = this.clis.idx(ch);
@@ -292,25 +287,39 @@ class ClientRouter {
 }
 
 // main entry point
-async function serveSpirit(store, host, port, conf) {
-    // parse arguments
-    conf = conf ?? {};
+async function serveSpirit(store, host, port, args) {
+    // load config
+    args = args ?? {};
+    let conf = {...conf0, ...args};
 
     // create server objects
     const app = express();
     const server = createServer(app);
     const wss = new WebSocketServer({server});
 
+    // set up sessions
+    const sess = session({
+        secret: conf.secret,
+        resave: false,
+        saveUninitialized: true
+    });
+    app.use(sess);
+
     // index existing files
     let index = await indexAll(store);
     console.log(`indexed ${index.refs.size} documents in ${store}`);
 
     // create client router
-    let router = new ClientRouter(store);
+    let router = new ClientRouter(store, conf.autosave);
 
     // connect websocket
-    wss.on('connection', ws => {
+    wss.on('connection', (ws, req) => {
         console.log(`connected`);
+
+        // parse session
+        sess(req, {}, () => {
+            console.log('session parsed');
+        });
 
         // create client handler
         let ch = new ClientHandler(ws);
@@ -319,7 +328,7 @@ async function serveSpirit(store, host, port, conf) {
         ch.config(conf);
 
         // the client is requesting a document
-        ch.addEventListener('load', evt => {
+        ch.addListener('load', evt => {
             let doc = evt.detail;
 
             // ensure path is local
@@ -342,17 +351,33 @@ async function serveSpirit(store, host, port, conf) {
         });
 
         // the client is disconnecting
-        ch.addEventListener('close', () => {
+        ch.addListener('close', () => {
             router.del(ch);
         });
 
         // the client is requesting a reindex
-        ch.addEventListener('reindex', async () => {
+        ch.addListener('reindex', async () => {
             index = await indexAll(store);
         });
 
+        // the client is requesting a login
+        ch.addListener('login', evt => {
+            let {user, pass} = evt.detail;
+            req.session.user = user;
+        });
+
+        // debug print command
+        ch.addListener('debug', evt => {
+            console.log('=== DEBUG ===');
+            console.log('docs:');
+            console.log(router.docs);
+            console.log('clis:');
+            console.log(router.clis);
+            console.log('=============');
+        });
+
         // the client is requesting a document creation
-        ch.addEventListener('create', async evt => {
+        ch.addListener('create', async evt => {
             let doc = evt.detail;
             console.log(`create: ${doc}`);
 
@@ -379,6 +404,15 @@ async function serveSpirit(store, host, port, conf) {
 
     // set up static paths
     app.use(express.static('.'));
+
+    // middleware to test if authenticated
+    function isAuthenticated(req, res, next) {
+        if (req.session.user) {
+            next();
+        } else {
+            next('route');
+        }
+    }
 
     // connect serve index
     app.get('/', (req, res) => {
