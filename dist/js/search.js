@@ -44,6 +44,7 @@ class SpiritSearch extends EventTarget {
                     this.dispatchEvent(
                         new CustomEvent('open', {detail: doc})
                     );
+                    this.hide();
                 }
                 this.hide();
                 evt.preventDefault();
@@ -118,6 +119,12 @@ class SpiritSearch extends EventTarget {
         for (let [doc, title] of results) {
             let line = document.createElement('div');
             line.classList.add('result-line');
+            line.addEventListener('click', evt => {
+                this.dispatchEvent(
+                    new CustomEvent('open', {detail: doc})
+                );
+                this.hide();
+            });
 
             let dtag = document.createElement('span');
             dtag.classList.add('result-doc');
@@ -130,10 +137,6 @@ class SpiritSearch extends EventTarget {
             line.appendChild(ttag);
             line.appendChild(dtag);
             this.results.appendChild(line);
-        }
-        let first = this.results.querySelector('.result-line');
-        if (first) {
-            first.classList.add('selected');
         }
     }
 
@@ -171,8 +174,8 @@ class SpiritSearch extends EventTarget {
         let curr = this.getSelected();
         if (curr) {
             let prev = curr.previousElementSibling;
+            curr.classList.remove('selected');
             if (prev) {
-                curr.classList.remove('selected');
                 prev.classList.add('selected');
             }
         }

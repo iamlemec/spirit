@@ -120,10 +120,10 @@ class DocumentHandler extends NodeEventTarget {
 // self-contained client handler
 // emits: load, update, close, reindex
 class ClientHandler extends NodeEventTarget {
-    constructor(ws, secret) {
+    constructor(ws, auth) {
         super();
         this.ws = ws;
-        this.secret = secret;
+        this.auth = auth;
 
         // handle incoming messages
         ws.on('message', msg => {
@@ -131,15 +131,9 @@ class ClientHandler extends NodeEventTarget {
             let {cmd, auth, data} = JSON.parse(msg);
 
             // check authorization
-            if (auth == null && cmd != 'login') {
+            if (cmd != 'login' && cmd != 'auth' && !this.auth.valid(this)) {
                 console.log(`not logged in`);
                 return;
-            } else if (auth != null && this.secret != null) {
-                let {username, token} = auth;
-                if (username != jwt.verify(token, this.secret)) {
-                    console.log(`invalid token`);
-                    return;
-                }
             }
 
             // handle commands
@@ -154,6 +148,9 @@ class ClientHandler extends NodeEventTarget {
                 this.emit('reindex');
             } else if (cmd == 'login') {
                 this.emit('login', { detail: data });
+            } else if (cmd == 'auth') {
+                let {username, token} = data;
+                this.auth.login(this, username, token);
             } else if (cmd == 'debug') {
                 this.emit('debug');
             } else if (cmd == 'save') {
@@ -198,8 +195,8 @@ class ClientHandler extends NodeEventTarget {
         this.send('update', chg.toJSON());
     }
 
-    auth(username, token) {
-        this.send('auth', {username, token});
+    token(username, token) {
+        this.send('token', {username, token});
     }
 }
 
@@ -299,30 +296,54 @@ class ClientRouter {
     }
 }
 
+// track users and logins with tokens
 class AuthState {
     constructor(secret, users) {
         this.secret = secret;
         this.users = new Map(Object.entries(users));
+        this.auths = new Set();
     }
 
+    // add a new user
     add(username, password) {
         this.users.set(username, password);
     }
 
+    // delete a user
     del(username) {
         this.users.delete(username);
     }
 
+    // check user credentials
     check(username, password) {
         return this.users.has(username) && this.users.get(username) == password;
     }
 
+    // generate a token for a user
     token(username) {
         return jwt.sign(username, this.secret);
     }
 
+    // verify a token for a user
     verify(username, token) {
         return username == jwt.verify(token, this.secret);
+    }
+
+    // login a user
+    login(ch, username, token) {
+        if (this.verify(username, token)) {
+            this.auths.add(ch);
+        }
+    }
+
+    // logout a user
+    logout(ch) {
+        this.auths.delete(ch);
+    }
+
+    // check if a user is logged in
+    valid(ch) {
+        return this.auths.has(ch);
     }
 }
 
@@ -354,7 +375,7 @@ async function serveSpirit(store, host, port, args) {
         console.log(`connected`);
 
         // create client handler
-        let ch = new ClientHandler(ws, conf.secret);
+        let ch = new ClientHandler(ws, auth);
 
         // send config info
         ch.config(args.client);
@@ -398,7 +419,8 @@ async function serveSpirit(store, host, port, args) {
             console.log(`login: ${username} ${password}`);
             if (auth.check(username, password)) {
                 let token = auth.token(username);
-                ch.auth(username, token);
+                ch.token(username, token);
+                auth.login(ch, username, token);
             }
         });
 

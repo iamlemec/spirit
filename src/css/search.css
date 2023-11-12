@@ -50,6 +50,11 @@
     gap: 10px;
     border-bottom: 1px solid #DDD;
     padding: 15px;
+    user-select: none;
+}
+
+.result-line:hover {
+    background-color: #EEE;
 }
 
 .result-doc {

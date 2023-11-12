@@ -106,7 +106,7 @@ class Connection extends EventTarget {
             } else if (cmd == 'update') {
                 let chg = ChangeSet.fromJSON(data);
                 this.emit('update', chg);
-            } else if (cmd == 'auth') {
+            } else if (cmd == 'token') {
                 let {username, token} = data;
                 setCookie('username', username);
                 setCookie('token', token);
@@ -129,13 +129,7 @@ class Connection extends EventTarget {
     }
 
     send(cmd, data) {
-        // get authentication
-        let username = getCookie('username');
-        let token = getCookie('token');
-        let auth = (username != null && token != null) ? {username, token} : null;
-
-        // send message
-        let msg = filterNull({cmd, data, auth});
+        let msg = filterNull({cmd, data});
         this.ws.send(JSON.stringify(msg));
     }
 
@@ -171,6 +165,14 @@ class Connection extends EventTarget {
 
     sendDebug() {
         this.send('debug');
+    }
+
+    sendAuth() {
+        let username = getCookie('username');
+        let token = getCookie('token');
+        if (username != null && token != null) {
+            this.send('auth', {username, token});
+        }
     }
 }
 
@@ -295,6 +297,7 @@ function initSpirit(doc_start) {
 
     // connect open event
     connect.addEventListener('open', evt => {
+        connect.sendAuth();
         if (doc_start != null) {
             connect.loadDocument(doc_start);
         }
@@ -410,7 +413,7 @@ function initSpirit(doc_start) {
             evt.preventDefault();
         } else if (evt.key == 'F3') {
             console.log('=== DEBUG ===');
-            console.log('doc_current: ' + doc_current);
+            console.log(`doc_current: ${doc_current}`);
             console.log('=============');
             connect.sendDebug();
             evt.preventDefault();
