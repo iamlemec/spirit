@@ -61,7 +61,7 @@ class SpiritEditor extends EventTarget {
         this.setCode(src);
         this.setDisp(src);
         this.emit = true;
-        this.edit.focus();
+        this.focus();
     }
 
     sendUpdate(upd) {
@@ -108,6 +108,10 @@ class SpiritEditor extends EventTarget {
         let html = await renderMarkdown(src, this.extern, this.macros);
         this.disp.innerHTML = html;
         positionPopups(this.disp);
+    }
+
+    focus() {
+        this.edit.focus();
     }
 }
 

@@ -419,8 +419,13 @@ function initSpirit(doc_start) {
         } else if (evt.key == 'F2') {
             console.log('login');
             search.hide();
-            login.classList.toggle('active');
-            login_user.focus();
+            if (login.classList.contains('active')) {
+                login.classList.remove('active');
+                editor.focus();
+            } else {
+                login.classList.add('active');
+                login_user.focus();
+            }
             evt.preventDefault();
         } else if (evt.key == 'F3') {
             console.log('=== DEBUG ===');
@@ -431,6 +436,7 @@ function initSpirit(doc_start) {
         } else if (evt.key == 'Escape') {
             search.hide();
             login.classList.remove('active');
+            editor.focus();
             evt.preventDefault();
         }
     });
