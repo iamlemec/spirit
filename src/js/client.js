@@ -63,6 +63,13 @@ function downloadText(name, text) {
     downloadBlob(name, blob);
 }
 
+// get rid of null values in object
+function filterNull(x) {
+    return Object.fromEntries(
+        Object.entries(x).filter(([k, v]) => v != null)
+    );
+}
+
 /*
 ** network related tools
 */
@@ -79,89 +86,91 @@ class Connection extends EventTarget {
         // track connectivity
         this.ws.addEventListener('open', evt => {
             console.log('connected');
-            this.dispatchEvent(new Event('open'));
+            this.emit('open');
         });
 
         // connect real events
         this.ws.addEventListener('message', evt => {
             console.log(`received: ${evt.data}`);
-            let {cmd, doc, data} = JSON.parse(evt.data);
+            let {cmd, data} = JSON.parse(evt.data);
             if (cmd == 'load') {
-                this.dispatchEvent(
-                    new CustomEvent('load', {detail: {doc, text: data}})
-                );
+                let {doc, text} = data;
+                this.emit('load', {doc, text});
             } else if (cmd == 'flash') {
                 console.log(`flash: ${data}`);
-                this.dispatchEvent(
-                    new CustomEvent('flash', {detail: data})
-                );
+                this.emit('flash', data);
             } else if (cmd == 'readonly') {
-                this.dispatchEvent(
-                    new CustomEvent('readonly', {detail: data})
-                );
+                this.emit('readonly', data);
             } else if (cmd == 'config') {
-                this.dispatchEvent(
-                    new CustomEvent('config', {detail: data})
-                );
+                this.emit('config', data);
             } else if (cmd == 'update') {
                 let chg = ChangeSet.fromJSON(data);
-                this.dispatchEvent(
-                    new CustomEvent('update', {detail: chg})
-                );
+                this.emit('update', chg);
+            } else if (cmd == 'auth') {
+                let {username, token} = data;
+                setCookie('username', username);
+                setCookie('token', token);
             } else {
                 console.log(`unknown command: ${cmd}`);
             }
         });
     }
 
+    emit(cmd, data) {
+        if (data == null) {
+            this.dispatchEvent(
+                new Event(cmd)
+            );
+        } else {
+            this.dispatchEvent(
+                new CustomEvent(cmd, {detail: data})
+            );
+        }
+    }
+
+    send(cmd, data) {
+        // get authentication
+        let username = getCookie('username');
+        let token = getCookie('token');
+        let auth = (username != null && token != null) ? {username, token} : null;
+
+        // send message
+        let msg = filterNull({cmd, data, auth});
+        this.ws.send(JSON.stringify(msg));
+    }
+
     loadDocument(doc) {
-        this.ws.send(JSON.stringify({
-            cmd: 'load', doc
-        }));
+        this.send('load', doc);
     }
 
     closeDocument() {
-        this.ws.send(JSON.stringify({
-            cmd: 'close'
-        }));
+        this.send('close');
     }
 
     sendUpdates(upd) {
         if (this.ws.readyState) {
-            this.ws.send(JSON.stringify({
-                cmd: 'update', data: upd.changes.toJSON()
-            }));
+            this.send('update', upd.changes.toJSON());
         }
     }
 
     saveDocument() {
-        this.ws.send(JSON.stringify({
-            cmd: 'save'
-        }));
+        this.send('save');
     }
 
     createDocument(doc) {
-        this.ws.send(JSON.stringify({
-            cmd: 'create', doc
-        }));
+        this.send('create', doc);
     }
 
     reloadIndex() {
-        this.ws.send(JSON.stringify({
-            cmd: 'reindex'
-        }));
+        this.send('reindex');
     }
 
     sendLogin(username, password) {
-        this.ws.send(JSON.stringify({
-            cmd: 'login', data: {username, password}
-        }));
+        this.send('login', {username, password});
     }
 
     sendDebug() {
-        this.ws.send(JSON.stringify({
-            cmd: 'debug'
-        }));
+        this.send('debug');
     }
 }
 
@@ -397,6 +406,7 @@ function initSpirit(doc_start) {
         } else if (evt.key == 'F2') {
             console.log('login');
             login.classList.toggle('active');
+            login_user.focus();
             evt.preventDefault();
         } else if (evt.key == 'F3') {
             console.log('=== DEBUG ===');

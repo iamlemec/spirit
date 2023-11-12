@@ -2,9 +2,8 @@
 
 import fs from 'fs';
 import path from 'path'
-import toml from 'toml'
 import express from 'express'
-import session from 'express-session'
+import jwt from 'jsonwebtoken'
 import NodeEventTarget from 'events'
 import { createServer } from 'http'
 import { WebSocketServer } from 'ws'
@@ -18,7 +17,6 @@ export { serveSpirit }
 
 // global constants
 const conf0 = {
-    secret: 'secret', // cookie secret
     autosave: 10000 // autosave rate (milliseconds)
 }
 
@@ -122,16 +120,31 @@ class DocumentHandler extends NodeEventTarget {
 // self-contained client handler
 // emits: load, update, close, reindex
 class ClientHandler extends NodeEventTarget {
-    constructor(ws) {
+    constructor(ws, secret) {
         super();
         this.ws = ws;
+        this.secret = secret;
 
         // handle incoming messages
         ws.on('message', msg => {
             console.log(`received: ${msg}`);
-            let {cmd, doc, data} = JSON.parse(msg);
+            let {cmd, auth, data} = JSON.parse(msg);
+
+            // check authorization
+            if (auth == null && cmd != 'login') {
+                console.log(`not logged in`);
+                return;
+            } else if (auth != null && this.secret != null) {
+                let {username, token} = auth;
+                if (username != jwt.verify(token, this.secret)) {
+                    console.log(`invalid token`);
+                    return;
+                }
+            }
+
+            // handle commands
             if (cmd == 'load') {
-                this.emit('load', { detail: doc });
+                this.emit('load', { detail: data });
             } else if (cmd == 'close') {
                 this.emit('close');
             } else if (cmd == 'update') {
@@ -146,7 +159,7 @@ class ClientHandler extends NodeEventTarget {
             } else if (cmd == 'save') {
                 this.emit('save');
             } else if (cmd == 'create') {
-                this.emit('create', { detail: doc });
+                this.emit('create', { detail: data });
             } else {
                 console.log(`unknown command: ${cmd}`);
             }
@@ -159,34 +172,34 @@ class ClientHandler extends NodeEventTarget {
         });
     }
 
+    send(cmd, data) {
+        this.ws.send(
+            JSON.stringify({cmd, data})
+        );
+    }
+
     config(conf) {
-        this.ws.send(JSON.stringify({
-            cmd: 'config', data: conf
-        }));
+        this.send('config', conf);
     }
 
     load(doc, text) {
-        this.ws.send(JSON.stringify({
-            cmd: 'load', doc, data: text
-        }));
+        this.send('load', {doc, text});
     }
 
     flash(text) {
-        this.ws.send(JSON.stringify({
-            cmd: 'flash', data: text
-        }));
+        this.send('flash', text);
     }
 
     readonly(val) {
-        this.ws.send(JSON.stringify({
-            cmd: 'readonly', data: val
-        }));
+        this.send('readonly', val);
     }
 
     update(chg) {
-        this.ws.send(JSON.stringify({
-            cmd: 'update', data: chg.toJSON()
-        }));
+        this.send('update', chg.toJSON());
+    }
+
+    auth(username, token) {
+        this.send('auth', {username, token});
     }
 }
 
@@ -286,46 +299,65 @@ class ClientRouter {
     }
 }
 
+class AuthState {
+    constructor(secret, users) {
+        this.secret = secret;
+        this.users = new Map(Object.entries(users));
+    }
+
+    add(username, password) {
+        this.users.set(username, password);
+    }
+
+    del(username) {
+        this.users.delete(username);
+    }
+
+    check(username, password) {
+        return this.users.has(username) && this.users.get(username) == password;
+    }
+
+    token(username) {
+        return jwt.sign(username, this.secret);
+    }
+
+    verify(username, token) {
+        return username == jwt.verify(token, this.secret);
+    }
+}
+
 // main entry point
 async function serveSpirit(store, host, port, args) {
     // load config
     args = args ?? {};
-    let conf = {...conf0, ...args};
-
-    // create server objects
-    const app = express();
-    const server = createServer(app);
-    const wss = new WebSocketServer({server});
-
-    // set up sessions
-    const sess = session({
-        secret: conf.secret,
-        resave: false,
-        saveUninitialized: true
-    });
-    app.use(sess);
+    let conf = {...conf0, ...args.server};
+    console.log(conf);
 
     // index existing files
     let index = await indexAll(store);
     console.log(`indexed ${index.refs.size} documents in ${store}`);
 
     // create client router
-    let router = new ClientRouter(store, conf.autosave);
+    let router = new ClientRouter(store, conf);
+    let auth = new AuthState(conf.secret, conf.users);
 
-    // connect websocket
+    // create express
+    const app = express();
+    app.use(express.static('.'));
+
+    // set up http server
+    const server = createServer(app);
+    const wss = new WebSocketServer({ server });
+
+    // set up websocket server
     wss.on('connection', (ws, req) => {
         console.log(`connected`);
 
-        // parse session
-        sess(req, {}, () => {
-            console.log('session parsed');
-        });
-
         // create client handler
-        let ch = new ClientHandler(ws);
+        let ch = new ClientHandler(ws, conf.secret);
 
         // send config info
-        ch.config(conf);
+        ch.config(args.client);
 
         // the client is requesting a document
         ch.addListener('load', evt => {
@@ -362,18 +394,17 @@ async function serveSpirit(store, host, port, args) {
 
         // the client is requesting a login
         ch.addListener('login', evt => {
-            let {user, pass} = evt.detail;
-            req.session.user = user;
+            let {username, password} = evt.detail;
+            console.log(`login: ${username} ${password}`);
+            if (auth.check(username, password)) {
+                let token = auth.token(username);
+                ch.auth(username, token);
+            }
         });
 
         // debug print command
         ch.addListener('debug', evt => {
             console.log('=== DEBUG ===');
-            console.log('docs:');
-            console.log(router.docs);
-            console.log('clis:');
-            console.log(router.clis);
-            console.log('=============');
         });
 
         // the client is requesting a document creation
@@ -401,18 +432,6 @@ async function serveSpirit(store, host, port, args) {
             }
         });
     });
-
-    // set up static paths
-    app.use(express.static('.'));
-
-    // middleware to test if authenticated
-    function isAuthenticated(req, res, next) {
-        if (req.session.user) {
-            next();
-        } else {
-            next('route');
-        }
-    }
 
     // connect serve index
     app.get('/', (req, res) => {
