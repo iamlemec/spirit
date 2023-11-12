@@ -1,6 +1,7 @@
 import { enableResize, SpiritEditor } from './editor.js';
 import { exportLatex } from './export.js';
 import { SpiritSearch } from './search.js';
+import { EventTargetPlus } from './utils.js';
 import { ChangeSet } from '../node_modules/@codemirror/state/dist/index.js';
 
 // spirit client
@@ -74,7 +75,7 @@ function filterNull(x) {
 */
 
 // this store the current document id
-class Connection extends EventTarget {
+class Connection extends EventTargetPlus {
     constructor(doc0) {
         super();
 
@@ -113,18 +114,6 @@ class Connection extends EventTarget {
                 console.log(`unknown command: ${cmd}`);
             }
         });
-    }
-
-    emit(cmd, data) {
-        if (data == null) {
-            this.dispatchEvent(
-                new Event(cmd)
-            );
-        } else {
-            this.dispatchEvent(
-                new CustomEvent(cmd, {detail: data})
-            );
-        }
     }
 
     send(cmd, data) {

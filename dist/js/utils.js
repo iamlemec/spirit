@@ -17,4 +17,18 @@ class DefaultCounter {
     }
 }
 
-export { DefaultCounter };
+class EventTargetPlus extends EventTarget {
+    emit(cmd, data) {
+        if (data == null) {
+            this.dispatchEvent(
+                new Event(cmd)
+            );
+        } else {
+            this.dispatchEvent(
+                new CustomEvent(cmd, {detail: data})
+            );
+        }
+    }
+}
+
+export { DefaultCounter, EventTargetPlus };

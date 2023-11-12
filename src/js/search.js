@@ -2,6 +2,8 @@
 
 export { SpiritSearch }
 
+import { EventTargetPlus } from './utils.js';
+
 function placeCaretAtEnd(elem) {
     elem.focus();
     let sel = window.getSelection();
@@ -9,7 +11,7 @@ function placeCaretAtEnd(elem) {
     sel.collapseToEnd();
 }
 
-class SpiritSearch extends EventTarget {
+class SpiritSearch extends EventTargetPlus {
     constructor(search, extern) {
         super();
 
@@ -42,9 +44,7 @@ class SpiritSearch extends EventTarget {
                 let doc = this.getDocument();
                 if (doc != null) {
                     doc = (doc == '/') ? null : doc;
-                    this.dispatchEvent(
-                        new CustomEvent('open', {detail: doc})
-                    );
+                    this.emit('open', doc);
                     this.hide();
                 }
                 this.hide();
@@ -64,9 +64,7 @@ class SpiritSearch extends EventTarget {
             if (text.trim() == '') {
                 return;
             }
-            this.dispatchEvent(
-                new CustomEvent('create', {detail: text})
-            );
+            this.emit('create', text);
             this.hide();
         });
 
@@ -121,9 +119,7 @@ class SpiritSearch extends EventTarget {
             let line = document.createElement('div');
             line.classList.add('result-line');
             line.addEventListener('click', evt => {
-                this.dispatchEvent(
-                    new CustomEvent('open', {detail: doc})
-                );
+                this.emit('open', doc);
                 this.hide();
             });
 

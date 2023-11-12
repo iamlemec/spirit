@@ -17,7 +17,8 @@ export { serveSpirit }
 
 // global constants
 const conf0 = {
-    autosave: 10000 // autosave rate (milliseconds)
+    autosave: 10000, // autosave rate (milliseconds)
+    authenticate: false, // whether to require authentication
 }
 
 // check if subdirectory
@@ -128,10 +129,10 @@ class ClientHandler extends NodeEventTarget {
         // handle incoming messages
         ws.on('message', msg => {
             console.log(`received: ${msg}`);
-            let {cmd, auth, data} = JSON.parse(msg);
+            let {cmd, data} = JSON.parse(msg);
 
             // check authorization
-            if (cmd != 'login' && cmd != 'auth' && !this.auth.valid(this)) {
+            if (cmd != 'login' && cmd != 'auth' && this.auth && !this.auth.valid(this)) {
                 console.log(`not logged in`);
                 return;
             }
@@ -360,7 +361,7 @@ async function serveSpirit(store, host, port, args) {
 
     // create client router
     let router = new ClientRouter(store, conf);
-    let auth = new AuthState(conf.secret, conf.users);
+    let auth = conf.authenticate ? new AuthState(conf.secret, conf.users) : null;
 
     // create express
     const app = express();
