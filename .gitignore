@@ -3,3 +3,4 @@
 /backup
 screenlog.*
 config.toml
+auth.toml

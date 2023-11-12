@@ -55,11 +55,10 @@ class SpiritEditor extends EventTarget {
     }
 
     loadDocument(src) {
-        if (src) {
-            this.emit = false;
-            this.setCode(src);
-            this.setDisp(src);
-        }
+        src = src ?? '';
+        this.emit = false;
+        this.setCode(src);
+        this.setDisp(src);
         this.emit = true;
         this.edit.focus();
     }

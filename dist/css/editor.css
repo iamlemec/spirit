@@ -1,4 +1,5 @@
 @import './search.css';
+@import './login.css';
 @import './ibmplexsans.css';
 @import './ibmplexmono.css';
 
@@ -164,53 +165,4 @@ svg.icon:hover {
     opacity: unset;
     border-radius: 5px;
     font-family: sans-serif;
-}
-
-/* login controls */
-
-#login-window {
-    align-items: center;
-    justify-content: center;
-    left: 30%;
-    top: 30%;
-    width: 40%;
-    height: 40%;
-}
-
-#login-box {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-    padding: 20px;
-    width: 500px;
-}
-
-.login-row {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-}
-
-#login-username, #login-password {
-    width: 80%;
-    margin: auto;
-    font-size: 20px;
-    border: 0;
-    border-bottom: 1px solid gray;
-}
-
-#login-username:focus, #login-password:focus {
-    outline: 0;
-}
-
-#login-button {
-    font-size: 20px;
-    margin: auto;
-    padding: 10px 20px;
-    margin-top: 30px;
-    color: white;
-    background-color: var(--neon-blue);
-    border-radius: 5px;
-    box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.25);
-    border: 0px;
 }

@@ -121,10 +121,10 @@ class DocumentHandler extends NodeEventTarget {
 // self-contained client handler
 // emits: load, update, close, reindex
 class ClientHandler extends NodeEventTarget {
-    constructor(ws, auth) {
+    constructor(ws, user) {
         super();
         this.ws = ws;
-        this.auth = auth;
+        this.user = user;
 
         // handle incoming messages
         ws.on('message', msg => {
@@ -132,7 +132,7 @@ class ClientHandler extends NodeEventTarget {
             let {cmd, data} = JSON.parse(msg);
 
             // check authorization
-            if (cmd != 'login' && cmd != 'auth' && this.auth && !this.auth.valid(this)) {
+            if (cmd != 'login' && cmd != 'auth' && (this.user != null) && !this.user.valid(this)) {
                 console.log(`not logged in`);
                 return;
             }
@@ -148,10 +148,23 @@ class ClientHandler extends NodeEventTarget {
             } else if (cmd == 'reindex') {
                 this.emit('reindex');
             } else if (cmd == 'login') {
-                this.emit('login', { detail: data });
+                let {username, password} = data;
+                if ((this.user != null) && this.user.check(username, password)) {
+                    let token = this.user.token(username);
+                    this.token(username, token);
+                    this.user.login(this, username, token);
+                }
             } else if (cmd == 'auth') {
                 let {username, token} = data;
-                this.auth.login(this, username, token);
+                if (this.user != null) {
+                    if (this.user.login(this, username, token)) {
+                        this.token(username, token);
+                    }
+                }
+            } else if (cmd == 'logout') {
+                if (this.user != null) {
+                    this.user.logout(this);
+                }
             } else if (cmd == 'debug') {
                 this.emit('debug');
             } else if (cmd == 'save') {
@@ -327,13 +340,16 @@ class AuthState {
 
     // verify a token for a user
     verify(username, token) {
-        return username == jwt.verify(token, this.secret);
+        return this.users.has(username) && (username == jwt.verify(token, this.secret));
     }
 
     // login a user
     login(ch, username, token) {
         if (this.verify(username, token)) {
             this.auths.add(ch);
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -351,17 +367,17 @@ class AuthState {
 // main entry point
 async function serveSpirit(store, host, port, args) {
     // load config
-    args = args ?? {};
-    let conf = {...conf0, ...args.server};
-    console.log(conf);
+    let { conf, auth } = args ?? {};
+    let conf_server = {conf0, ...conf.server};
+    let conf_client = conf.client;
 
     // index existing files
     let index = await indexAll(store);
     console.log(`indexed ${index.refs.size} documents in ${store}`);
 
     // create client router
-    let router = new ClientRouter(store, conf);
-    let auth = conf.authenticate ? new AuthState(conf.secret, conf.users) : null;
+    let router = new ClientRouter(store, conf_server.rate);
+    let user = (auth != null) ? new AuthState(auth.secret, auth.users) : null;
 
     // create express
     const app = express();
@@ -376,10 +392,10 @@ async function serveSpirit(store, host, port, args) {
         console.log(`connected`);
 
         // create client handler
-        let ch = new ClientHandler(ws, auth);
+        let ch = new ClientHandler(ws, user);
 
         // send config info
-        ch.config(args.client);
+        ch.config(conf_client);
 
         // the client is requesting a document
         ch.addListener('load', evt => {
@@ -412,17 +428,6 @@ async function serveSpirit(store, host, port, args) {
         // the client is requesting a reindex
         ch.addListener('reindex', async () => {
             index = await indexAll(store);
-        });
-
-        // the client is requesting a login
-        ch.addListener('login', evt => {
-            let {username, password} = evt.detail;
-            console.log(`login: ${username} ${password}`);
-            if (auth.check(username, password)) {
-                let token = auth.token(username);
-                ch.token(username, token);
-                auth.login(ch, username, token);
-            }
         });
 
         // debug print command

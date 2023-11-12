@@ -108,8 +108,7 @@ class Connection extends EventTargetPlus {
                 this.emit('update', chg);
             } else if (cmd == 'token') {
                 let {username, token} = data;
-                setCookie('username', username);
-                setCookie('token', token);
+                this.emit('token', {username, token});
             } else {
                 console.log(`unknown command: ${cmd}`);
             }
@@ -149,6 +148,10 @@ class Connection extends EventTargetPlus {
 
     sendLogin(username, password) {
         this.send('login', {username, password});
+    }
+
+    sendLogout() {
+        this.send('logout');
     }
 
     sendDebug() {
@@ -327,7 +330,7 @@ function initSpirit(doc_start) {
             connect.sendUpdates(chg);
         }
     });
-    
+
     /*
     ** search interface
     */
@@ -359,15 +362,33 @@ function initSpirit(doc_start) {
     /* login interface */
 
     let login = document.querySelector('#login');
-    let login_button = document.querySelector('#login-button');
     let login_user = document.querySelector('#login-username');
     let login_pass = document.querySelector('#login-password');
+    let login_button = document.querySelector('#login-button');
+    let logout_button = document.querySelector('#logout-button');
 
     // connect login button
     login_button.addEventListener('click', evt => {
         let username = login_user.value;
         let password = login_pass.value;
         connect.sendLogin(username, password);
+    });
+
+    // connect logout button
+    logout_button.addEventListener('click', evt => {
+        setCookie('username', '');
+        setCookie('token', '');
+        login.classList.remove('authorized');
+        connect.sendLogout();
+    });
+
+    // when we get a token from the server
+    connect.addEventListener('token', evt => {
+        let {username, token} = evt.detail;
+        setCookie('username', username);
+        setCookie('token', token);
+        login.classList.remove('active');
+        login.classList.add('authorized');
     });
 
     /*
@@ -390,12 +411,14 @@ function initSpirit(doc_start) {
         }
         if (evt.key == 'F1') {
             console.log('search');
+            login.classList.remove('active');
             if (!search.toggle()) {
                 editor.edit.focus();
             }
             evt.preventDefault();
         } else if (evt.key == 'F2') {
             console.log('login');
+            search.hide();
             login.classList.toggle('active');
             login_user.focus();
             evt.preventDefault();
@@ -404,6 +427,10 @@ function initSpirit(doc_start) {
             console.log(`doc_current: ${doc_current}`);
             console.log('=============');
             connect.sendDebug();
+            evt.preventDefault();
+        } else if (evt.key == 'Escape') {
+            search.hide();
+            login.classList.remove('active');
             evt.preventDefault();
         }
     });

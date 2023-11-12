@@ -46,10 +46,7 @@ class SpiritSearch extends EventTargetPlus {
                     this.emit('open', doc);
                     this.hide();
                 }
-                this.hide();
                 evt.preventDefault();
-            } else if (evt.key == 'Escape') {
-                this.hide();
             } else if (evt.key == 'ArrowDown') {
                 this.moveDown();
             } else if (evt.key == 'ArrowUp') {

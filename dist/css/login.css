@@ -1,0 +1,61 @@
+/* login controls */
+
+#login-window {
+    align-items: center;
+    justify-content: center;
+    left: 30%;
+    top: 30%;
+    width: 40%;
+    height: 40%;
+}
+
+#login-box {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding: 20px;
+    width: 400px;
+}
+
+.login-row {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;    
+}
+
+#login-username, #login-password {
+    width: 100%;
+    margin: auto;
+    font-size: 26px;
+    border: 0;
+    border-bottom: 1px solid gray;
+}
+
+#login-username:focus, #login-password:focus {
+    outline: 0;
+}
+
+#login-button, #logout-button {
+    margin: auto;
+    font-size: 20px;
+    padding: 10px 0px;
+    margin: 30px 0px;
+    width: 50%;
+    color: white;
+    box-sizing: border-box;
+    background-color: var(--neon-blue);
+    border-radius: 5px;
+    box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.25);
+    border: 0px;
+}
+
+#login.authorized #login-button, #login:not(.authorized) #logout-button {
+    background-color: #AAA;
+    box-shadow: none;
+    pointer-events: none;
+}
+
+#login-button.button:active #login-button.active {
+    opacity: 0.5;
+}

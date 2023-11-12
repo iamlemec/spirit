@@ -8,13 +8,14 @@ import { parseArgs } from 'node:util';
 
 // parse arguments
 const {
-    values: { host, port, conf },
+    values: { host, port, conf, auth },
 } = parseArgs({
     args: process.argv.slice(3),
     options: {
         host: { type: 'string', default: 'localhost' },
         port: { type: 'string', default: '8000'},
         conf: { type: 'string', default: '' },
+        auth: { type: 'string', default: '' },
     },
 });
 
@@ -127,6 +128,9 @@ function respawnServer() {
     let args = [`--host=${host}`, `--port=${port}`];
     if (conf.length > 0) {
         args.push(`--conf=${conf}`);
+    }
+    if (auth.length > 0) {
+        args.push(`--auth=${auth}`);
     }
     server = spawn(
         'node', ['src/js/console.js', 'serve', ...args], {stdio: 'inherit'}

@@ -62,9 +62,11 @@ program.command('serve')
     .option('-h, --host <host>', 'IP address to serve on', 'localhost')
     .option('-p, --port <port>', 'Port to serve on', 8000)
     .option('-c, --conf <conf>', 'Path to config file')
+    .option('-a, --auth <auth>', 'Path to auth file')
     .action(async (opts) => {
-        let args = (opts.conf != null) ? loadToml(opts.conf) : {};
-        await serveSpirit(opts.store, opts.host, opts.port, args);
+        let conf = (opts.conf != null) ? loadToml(opts.conf) : {};
+        let auth = (opts.auth != null) ? loadToml(opts.auth) : null;
+        await serveSpirit(opts.store, opts.host, opts.port, {conf, auth});
     });
 
 // execute program
