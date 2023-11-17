@@ -218,13 +218,13 @@ function parseArgs(argsraw) {
            .map(x => x.split(/(?<!\\)\=/))
            .filter(x => x.length > 1)
            .forEach(x => {
-               let [val, ...keys] = x.reverse();
-               keys.forEach(key => {
-                   if (!rx.test(key)) {
-                       args[key] = val;
-                   }
-               });
-           });
+                let [val, ...keys] = x.reverse();
+                keys.forEach(key => {
+                    if (!rx.test(key)) {
+                        args[key] = val.replace(/\\(\=|\|)/g, '$1');
+                    }
+                });
+            });
 
     if (!('id' in args)) {
         fst = argsraw.split(/(?<!\\)\||\n/)[0];
