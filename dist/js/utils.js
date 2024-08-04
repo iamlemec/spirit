@@ -17,6 +17,8 @@ class DefaultCounter {
     }
 }
 
+// javascript extensions
+
 class EventTargetPlus extends EventTarget {
     emit(cmd, data) {
         if (data == null) {

@@ -1,6 +1,51 @@
 // various general tools
 
-export { OrderedSet, Multimap, DefaultCounter, EventTargetPlus }
+export {
+    OrderedSet, Multimap, DefaultCounter, EventTargetPlus,
+    range, zip, enumerate, shard, sum
+}
+
+// general tools
+
+function range(n) {
+    return [...Array(n).keys()];
+}
+
+function* gzip(...iterables) {
+    if (iterables.length == 0) {
+        return;
+    }
+    let iterators = iterables.map(i => i[Symbol.iterator]());
+    while (true) {
+        let results = iterators.map(iter => iter.next());
+        if (results.some(res => res.done)) {
+            return;
+        } else {
+            yield results.map(res => res.value);
+        }
+    }
+}
+
+function zip(...iterables) {
+    return [...gzip(...iterables)];
+}
+
+function enumerate(x) {
+    let n = x.length;
+    let idx = range(n);
+    return zip(idx, x);
+}
+
+function shard(arr, n) {
+    return zip(...range(n).map(i => arr.slice(i)));
+}
+
+function sum(arr) {
+    arr = arr.filter(v => v != null);
+    return arr.reduce((a, b) => a + b, 0);
+}
+
+// data structures
 
 class OrderedSet {
     constructor() {
@@ -140,6 +185,8 @@ class DefaultCounter {
         return this.values.get(key);
     }
 }
+
+// javascript extensions
 
 class EventTargetPlus extends EventTarget {
     emit(cmd, data) {

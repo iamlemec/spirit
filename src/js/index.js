@@ -4,6 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import toml from 'toml'
 import { parseDocument, Context } from './markum.js'
+import { sum, shard } from './utils.js'
 
 export { indexAll }
 
@@ -16,8 +17,15 @@ const istxt = regext('md');
 const isimg = regext('png|jpg|jpeg|gif');
 const iscit = regext('toml');
 
+// string sharder
+function shard_string(txt, n) {
+    let str = txt.toLowerCase();
+    let shd = shard([...str], n);
+    return shd.map(sh => sh.join(''));
+}
+
 // extract refs from documents
-async function parseRefs(doc) {
+async function parseDoc(doc) {
     // load document source
     let fpath = path.join(store, doc);
     let text = fs.readFileSync(fpath, 'utf8');
@@ -26,27 +34,28 @@ async function parseRefs(doc) {
     let tree = parseDocument(text);
     let ctx = new Context();
     await tree.refs(ctx);
+    let refs = ctx.refer;
 
     // abort if no title
     if (ctx.title == null) {
         return null;
     }
-
-    // parse title and blurb
-    let ttext = await ctx.title.inner(ctx);
-    tree.children = tree.children.slice(0, 2);
-    let prev = await tree.html(ctx);
+    let title = await ctx.title.inner(ctx);
 
     // parse popups
-    for (let [k, v] of ctx.popup) {
-        ctx.popup.set(k, await v.html(ctx));
-    }
+    let pops = new Map([...ctx.popup].map(
+        async ([k, v]) => [k, await v.html(ctx)]
+    ));
+
+    // parse paragraphs
+    let para = text.split('\n\n').map(p => p.trim());
+
+    // parse blurb (destructive)
+    tree.children = tree.children.slice(0, 2);
+    let blurb = await tree.html(ctx);
 
     // return results
-    return {
-        title: ttext, blurb: prev,
-        refs: ctx.refer, pops: ctx.popup
-    };
+    return { title, blurb, refs, pops, para };
 }
 
 async function parseCites(cit) {
@@ -60,21 +69,22 @@ async function parseCites(cit) {
 class Index {
     constructor() {
         this.docs = new Map();
+        this.shrd = new Map();
         this.refs = new Map();
         this.pops = new Map();
         this.cits = new Map();
     }
 
     async indexDoc(doc) {
-        let info = await parseRefs(doc);
+        let info = await parseDoc(doc);
         if (info == null) {
             return;
         }
 
         // extract info
-        let {title, blurb, refs, pops} = info;
+        let { title, blurb, refs, pops, para } = info;
 
-        // add in title info
+        // add in title refs
         this.docs.set(doc, title);
         this.refs.set(doc, title);
         this.pops.set(doc, blurb);
@@ -86,6 +96,10 @@ class Index {
         for (let [k, v] of pops) {
             this.pops.set(`${doc}:${k}`, v);
         }
+
+        // index full text by para
+        let shrd = para.map(p => new Set(shard_string(p, 3)));
+        this.shrd.set(doc, shrd);
     }
 
     async indexCite(cit) {
@@ -121,15 +135,34 @@ class Index {
     }
 
     search(query) {
+        // prepare query
         query = query.toLowerCase();
-        let results = [];
+        let shard = new Set(shard_string(query, 3));
+
+        // search by title
+        let title = new Set();
         for (let [k, v] of this.docs) {
             let [k1, v1] = [k.toLowerCase(), v.toLowerCase()];
             if (k1.includes(query) || v1.includes(query)) {
-                results.push([k, v]);
+                title.add(k);
             }
         }
-        return results;
+
+        // search by text
+        let docs = new Map();
+        for (let [k, v] of this.shrd) {
+            let n = sum(v.map(sh => sh.intersection(shard).size));
+            if (n > 0) { docs.set(k, n); }
+        }
+
+        // sort by score and remove title matches
+        let body = new Set([...docs]
+            .sort(([d1, n1], [d2, n2]) => n2 - n1)
+            .map(([k, v]) => k)
+        ).difference(title);
+
+        // generate results
+        return [...title, ...body].map(k => [k, this.docs.get(k)]);
     }
 }
 
