@@ -1,7 +1,7 @@
 /* markum css core */
 
 @import './katex.css';
-@import './gum.css';
+@import '../../gum.js/css/gum.css';
 @import './ibmplexmono.css';
 
 :root {
@@ -72,6 +72,12 @@ a {
 
 a, a:visited {
     color: var(--neon-blue);
+}
+
+/* emoji */
+
+.emoji.fail {
+    color: var(--neon-red);
 }
 
 /* equations */

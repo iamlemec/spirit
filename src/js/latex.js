@@ -2,7 +2,7 @@
 
 export { refsLatex, renderLatex }
 
-import { renderGum } from 'gum.js';
+import { renderGum } from '../../gum.js/js/gum.js';
 
 function className(x) {
     return x.constructor.name;

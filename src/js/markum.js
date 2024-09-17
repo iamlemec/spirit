@@ -10,7 +10,8 @@ export { parseInline, parseBlock, parseDocument, renderMarkdown, incrementCounte
 import katex from 'katex'
 import {
     parseGum, Element as GumElement, SVG as GumSVG, props_repr, zip
-} from 'gum.js'
+} from '../../gum.js/js/gum.js'
+import { emoji_table } from '../../gum.js/js/emoji.js';
 import { DefaultCounter } from './utils.js';
 
 /**
@@ -172,10 +173,11 @@ let inline = {
     code: /^(`+)\s*([\s\S]*?[^`])\s*\1(?!`)/,
     br: /^ *\n/,
     del: /^~~(?=\S)([\s\S]*?\S)~~/,
-    text: /^[\s\S]+?(?=[\/\\<!\[_*`\$\^@#~]|https?:\/\/| *\n|$)/,
+    text: /^[\s\S]+?(?=[\/\\<!\[_*`\$\^@#~:]|https?:\/\/| *\n|$)/,
     math: /^\$((?:\\\$|[\s\S])+?)\$/,
     refcite: /^(@{1,2})\[([^\]]+)\]/,
     footnote: /^\^(\!)?\[(inside)\]/,
+    emoji: /^:([a-zA-Z0-9_+-]+):/,
 };
 
 inline._inside = /(?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*/;
@@ -645,6 +647,14 @@ function parseInline(src) {
             let [mat, text] = cap;
             let inner = parseInline(text);
             out.push(new Strikeout(inner));
+            src = src.substring(mat.length);
+            continue;
+        }
+
+        // emoji
+        if (cap = inline.emoji.exec(src)) {
+            let [mat, text] = cap;
+            out.push(new Emoji(text));
             src = src.substring(mat.length);
             continue;
         }
@@ -1168,6 +1178,23 @@ class Monospace extends Text {
     constructor(text, args) {
         let attr = args ?? {};
         let attr1 = mergeAttr(attr, {class: 'monospace'});
+        super(text, attr1);
+    }
+}
+
+class Emoji extends Text {
+    constructor(text, args) {
+        let attr = args ?? {};
+
+        let klass = ['emoji'];
+        if (text in emoji_table) {
+            text = emoji_table[text];
+        } else {
+            text = `:${text}:`;
+            klass.push('fail');
+        }
+
+        let attr1 = mergeAttr(attr, {class: klass.join(' ')});
         super(text, attr1);
     }
 }
