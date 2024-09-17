@@ -4,3 +4,4 @@
 /backup
 screenlog.*
 *.toml
+package-lock.json
