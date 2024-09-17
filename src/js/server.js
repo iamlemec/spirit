@@ -79,9 +79,6 @@ class DocumentHandler extends NodeEventTarget {
         super();
         this.fpath = fpath;
 
-        // track clients
-        this.clients = new Set();
-
         // handle auto-save
         this.taint = false;
         this.timer = setInterval(() => {
