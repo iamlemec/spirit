@@ -1,0 +1,267 @@
+/* markum css core */
+
+@import './katex.css';
+@import '../../gum.js/css/gum.css';
+@import './ibmplexmono.css';
+
+:root {
+    --neon-blue: rgb(31, 111, 241);
+    --neon-red: rgb(255, 13, 87);
+}
+
+.block {
+    padding: 5px;
+    word-wrap: anywhere;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+.italic {
+    font-style: italic;
+}
+
+.monospace {
+    font-size: 80%;
+    background-color: rgba(0, 0, 0, 0.07);
+    border-radius: 3px;
+    padding: 0.1em 0.2em;
+}
+
+.strikeout {
+    text-decoration: line-through;
+}
+
+.title {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.heading {
+    font-weight: bold;
+}
+
+.heading-1 {
+    font-size: 24px;
+}
+
+.heading-2 {
+    font-size: 20px;
+}
+
+.heading-3 {
+    font-size: 16px;
+}
+
+.list > ul,
+.list > ol {
+    padding-left: 30px;
+    margin: 0px;
+}
+
+.comment {
+    color: #999;
+}
+
+/* links */
+
+a {
+    text-decoration: none;
+}
+
+a, a:visited {
+    color: var(--neon-blue);
+}
+
+/* emoji */
+
+.emoji.fail {
+    color: var(--neon-red);
+}
+
+/* equations */
+
+.equation {
+    position: relative;
+}
+
+.equation .number {
+    cursor: default;
+    font-family: monospace;
+    border: 1px solid black;
+    border-radius: 3px;
+    position: absolute;
+    right: 10px;
+    bottom: calc(50% - 10px);
+    min-width: 20px;
+    min-height: 20px;
+    padding: 3px;
+    font-size: 14px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.katex-display {
+    margin: 0;
+}
+
+/* figures */
+
+.figure, .table {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.caption {
+    margin-top: 10px;
+}
+
+/* lists */
+
+ul, ol {
+    padding-left: 30px;
+    margin: 0px;
+}
+
+ul li {
+    list-style: square;
+}
+
+/* tables */
+
+table {
+    border-collapse: collapse;
+}
+
+table th {
+    border-bottom: 2px solid black;
+}
+
+table th, table td {
+    padding: 5px 5px 0px 5px;
+}
+
+/* code */
+
+.code {
+    font-family: monospace;
+    font-size: 80%;
+    background-color: rgba(0, 0, 0, 0.07);
+    border-radius: 3px;
+    white-space: pre-wrap;
+    box-sizing: border-box;
+    padding: 10px;
+    width: 100%;
+}
+
+/* references */
+
+a.reference.fail {
+    color: var(--neon-red);
+}
+
+.reference {
+    white-space: nowrap;
+}
+
+/* parse errors */
+
+.error-prefix {
+    font-weight: bold;
+}
+
+.error-message {
+    color: var(--neon-red);
+}
+
+/* popups */
+
+.popup {
+    visibility: hidden;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, calc(-100% - 20px));
+    min-width: 250px;
+    border-radius: 5px;
+    padding: 10px;
+    color: white;
+    background-color: black;
+    opacity: 0.9;
+    font-family: unset;
+}
+
+.popper {
+    position: relative;
+    overflow: visible;
+}
+
+.popper:hover .popup {
+    visibility: visible;
+}
+
+.popup .popup {
+    display: none !important;
+}
+
+.popup.citation {
+    min-width: 250px;
+}
+
+.popup.external {
+    min-width: 300px;
+}
+
+.popup .figure,
+.popup .table {
+    min-width: 300px;
+}
+
+.popup .gum svg,
+.popup .svg svg {
+    stroke: white;
+}
+
+.popup .table th {
+    border-bottom: 2px solid white;
+}
+
+.popup .title {
+    font-size: 24px;
+    text-align: center;
+}
+
+.popup .block {
+    padding: 0;
+}
+
+.popup .block:first-child,
+.popup .block:last-child {
+    margin: 0;
+}
+
+.popup .code {
+    background-color: #111;
+    border: 1px solid #666;
+    color: white;
+}
+
+/* footnote */
+
+.footnote .number {
+    cursor: default;
+    font-family: monospace;
+    border: 1px solid black;
+    border-radius: 3px;
+    padding: 0px 6px;
+    vertical-align: 2px;
+    font-size: 90%;
+}
+
+.footnote .number:hover {
+    background-color: #DDD;
+}

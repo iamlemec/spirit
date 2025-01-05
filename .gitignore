@@ -1,7 +1,5 @@
 /node_modules
-/dist
 /store
 /backup
 screenlog.*
 *.toml
-package-lock.json

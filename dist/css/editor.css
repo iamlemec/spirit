@@ -1,0 +1,168 @@
+@import './search.css';
+@import './login.css';
+@import './ibmplexsans.css';
+@import './ibmplexmono.css';
+
+:root {
+    --window-border-color: #888;
+    --neon-blue: #1F6FE7;
+}
+
+body {
+    margin: 0;
+}
+
+#main {
+    position: fixed;
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+#left, #right {
+    height: 100%;
+}
+
+#left {
+    position: relative;
+    width: 50%;
+}
+
+#right {
+    width: 50%;
+    background-color: #EEE;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    font-family: IBMPlexSans;
+    font-size: 18px;
+}
+
+#right .monospace {
+    font-family: IBMPlexMono;
+}
+
+#right .title {
+    font-weight: 500;
+}
+
+#right .heading {
+    font-weight: 500;
+}
+
+#left .cm-editor {
+    height: 100%;
+    outline: 0;
+}
+
+#left .cm-scroller {
+    scrollbar-width: none;
+}
+
+#left .cm-content {
+    padding-bottom: 200px;
+}
+
+/* resize bar */
+
+#mid {
+    width: 4px;
+    background-color: #DDD;
+    border-left: 1px solid #CCC;
+    border-right: 1px solid #CCC;
+    cursor: col-resize;
+}
+
+/* elltwo */
+
+.block {
+    padding: 10px 20px;
+}
+
+.block:first-child {
+    margin-top: 10px;
+}
+
+.block:last-child {
+    margin-bottom: 10px;
+}
+
+/* svg icons */
+
+#icon-bar {
+    display: flex;
+    gap: 5px;
+    position: absolute;
+    bottom: 0px;
+    right: 5px;
+    z-index: 10;
+}
+
+svg.icon {
+    padding: 3px;
+    border: 1px solid gray;
+    border-radius: 2px;
+    background-color: #EEE;
+    cursor: pointer;
+    fill: none;
+    stroke: black;
+}
+
+svg.icon.fill {
+    fill: #AAA;
+}
+
+#copy {
+    fill: white;
+}
+
+svg.icon:active {
+    background-color: #DDD;
+}
+
+svg.icon:hover {
+    background-color: #CCC;
+}
+
+#download-popup {
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+    position: absolute;
+    bottom: 5px;
+    right: 0px;
+    z-index: 20;
+    visibility: hidden;
+}
+
+#download-section:hover > #download-popup {
+    visibility: visible;
+}
+
+/* overlay windows (search, login) */
+
+.overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.75);
+}
+
+.overlay:not(.active) {
+    display: none;
+}
+
+.window {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 10%;
+    left: 20%;
+    height: 80%;
+    width: 60%;
+    border: 1px solid var(--window-border-color);
+    background-color: white;
+    opacity: unset;
+    border-radius: 5px;
+    font-family: sans-serif;
+}
