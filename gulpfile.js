@@ -93,13 +93,19 @@ gulp.task('katex-fonts', gulp.parallel('katex-fonts-css', 'katex-fonts-data'));
 // all fonts
 gulp.task('fonts', gulp.parallel('spirit-fonts', 'gum-fonts', 'katex-fonts'));
 
+// minify mathjax
+gulp.task('minify-mathjax', () => gulp.src(['node_modules/mathjax/es5/tex-svg.js'])
+    .pipe(rename('mathjax.js'))
+    .pipe(gulp.dest('./dist/js'))
+);
+
 // all images
 gulp.task('images', () => gulp.src(['./src/img/*'])
     .pipe(gulp.dest('./dist/img'))
 );
 
 // spirit all
-gulp.task('build', gulp.parallel('js', 'css', 'fonts', 'images'));
+gulp.task('build', gulp.parallel('js', 'css', 'fonts', 'images', 'minify-mathjax'));
 
 /*
 ** Basic develop
